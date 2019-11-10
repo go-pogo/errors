@@ -1,4 +1,4 @@
-package errors
+package errs
 
 // ST is a stack of Frames from innermost (newest) to outermost (oldest).
 type ST struct {
