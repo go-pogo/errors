@@ -1,9 +1,7 @@
 package errs
 
 import (
-	"errors"
 	"fmt"
-	"strings"
 )
 
 // Unknown indicates an error is not created with a distinct kind.
@@ -16,54 +14,34 @@ func (k Kind) String() string {
 	return string(k)
 }
 
-// ErrorWithKind interfaces provide access to a Kind.
-type ErrorWithKind interface {
-	Kind() Kind
-}
-
-// ErrorWithMessage interfaces provide access to the error message without underlying error messages.
-type ErrorWithMessage interface {
-	Message() string
-}
-
-// ErrorWithStackTrace interfaces provide access to a stack trace.
-type ErrorWithStackTrace interface {
-	StackTrace() *ST
-}
-
-// ErrorWithUnwrap interfaces provide access to an Unwrap method which may return an underlying error.
-type ErrorWithUnwrap interface {
-	Unwrap() error
-}
-
-// Error is the error with kind and stack trace information.
-type Error struct {
+// err is a general error message with kind and stack trace information.
+type err struct {
 	st   *ST   // stack trace of functions that returned the error
 	err  error // cause of this error, if any
 	kind Kind
 	msg  string // message of error that occurred
 }
 
-func (err Error) StackTrace() *ST { return err.st }
-func (err Error) Unwrap() error   { return err.err }
-func (err Error) Kind() Kind      { return err.kind }
-func (err Error) Message() string { return err.msg }
-func (err Error) Error() string   { return Print(err) }
+func (err err) StackTrace() *ST { return err.st }
+func (err err) Unwrap() error   { return err.err }
+func (err err) Kind() Kind      { return err.kind }
+func (err err) Message() string { return err.msg }
+func (err err) Error() string   { return Print(err) }
 
-// WrapError is a wrapper for "primitive" errors that do not have stack trace information. It does
+// wrapErr is a wrapper for "primitive" errors that do not have stack trace information. It does
 // not contain an error message by itself and always displays the message of the underlying
 // wrapped error.
-type WrapError struct {
+type wrapErr struct {
 	st  *ST   // stack trace of functions that returned the error
 	err error // "primitive" error which contains the real error message
 }
 
-func (err WrapError) StackTrace() *ST { return err.st }
-func (err WrapError) Unwrap() error   { return err.err }
-func (err WrapError) Message() string { return err.err.Error() }
-func (err WrapError) Error() string   { return Print(err) }
+func (err wrapErr) StackTrace() *ST { return err.st }
+func (err wrapErr) Unwrap() error   { return err.err }
+func (err wrapErr) Message() string { return err.err.Error() }
+func (err wrapErr) Error() string   { return Print(err) }
 
-func (err WrapError) Kind() Kind {
+func (err wrapErr) Kind() Kind {
 	if err.err != nil {
 		if kErr, ok := err.err.(ErrorWithKind); ok {
 			return kErr.Kind()
@@ -73,39 +51,26 @@ func (err WrapError) Kind() Kind {
 	return Unknown
 }
 
-// prepare error struct, set field values etc.
-func prepError(err *Error, cause error, msg string) *Error {
-	err.st = NewStackTrace()
-	err.st.Capture(2)
-	err.err = cause
-	err.kind = Unknown
-	err.msg = msg
-
-	return err
-}
-
-func prepWrapError(err *WrapError, cause error) *WrapError {
-	err.st = NewStackTrace()
-	err.st.Capture(2)
-	err.err = cause
-
-	return err
-}
-
-func New(args ...interface{}) {
-
-}
-
 // Err creates an error from a message.
-func Err(msg string) *Error {
-	var err Error
-	return prepError(&err, nil, msg)
+func Err(kind Kind, msg string) *err {
+	var err err
+	return prepError(&err, nil, kind, msg)
 }
 
 // Errf creates an error according to a format specifier.
-func Errf(msg string, args ...interface{}) *Error {
-	var err Error
-	return prepError(&err, nil, fmt.Sprintf(msg, args...))
+func Errf(kind Kind, msg string, args ...interface{}) *err {
+	var err err
+	return prepError(&err, nil, kind, fmt.Sprintf(msg, args...))
+}
+
+// Wrap wraps an existing error with a new error containing the provided message.
+func Wrapf(cause error, kind Kind, msg string, args ...interface{}) error {
+	if cause == nil {
+		return nil
+	}
+
+	var err err
+	return prepError(&err, cause, kind, fmt.Sprintf(msg, args...))
 }
 
 // Wrap wraps an existing error with information about the stack frame its called with. Errors that
@@ -116,92 +81,30 @@ func Wrap(cause error, skip ...uint) error {
 		return nil
 	}
 
-	if wrErr, ok := cause.(ErrorWithStackTrace); ok {
-		wrErr.StackTrace().Capture(1)
+	if err, ok := cause.(ErrorWithStackTrace); ok {
+		err.StackTrace().Capture(1)
 		return cause
 	}
 
-	var err WrapError
+	var err wrapErr
 	return prepWrapError(&err, cause)
 }
 
-// Wrap wraps an existing error with a new error containing the provided message.
-func Wrapf(cause error, msg string, args ...interface{}) *Error {
-	if cause == nil {
-		return nil
-	}
+func prepError(err *err, cause error, kind Kind, msg string) *err {
+	err.st = NewStackTrace()
+	err.st.Capture(2)
 
-	var err Error
-	return prepError(&err, cause, fmt.Sprintf(msg, args...))
-}
+	err.err = cause
+	err.kind = kind
+	err.msg = msg
 
-// UnwrapAll returns the complete stack of errors starting with the supplied error.
-func UnwrapAll(err error) []error {
-	stack := make([]error, 0, 0)
-
-	for {
-		if err == nil {
-			break
-		}
-		stack = append(stack, err)
-		err = errors.Unwrap(err)
-	}
-
-	return stack
-}
-
-// UnwrapCause unwraps all errors and returns the first error that started it all.
-func UnwrapCause(err error) error {
-	for {
-		wErr := errors.Unwrap(err)
-		if wErr == nil {
-			break
-		} else {
-			err = wErr
-		}
-	}
 	return err
 }
 
-// Print returns the complete error stack as a readable formatted string.
-func Print(err error) string {
-	errorSb := &strings.Builder{}
-	traceSb := &strings.Builder{}
-	traceSb.WriteString("\n\nTrace:\n")
+func prepWrapError(err *wrapErr, cause error) *wrapErr {
+	err.st = NewStackTrace()
+	err.st.Capture(2)
+	err.err = cause
 
-	for {
-		stErr, ok := err.(ErrorWithStackTrace)
-		if !ok {
-			errorSb.WriteString(err.Error())
-			break
-		}
-
-		for _, frame := range stErr.StackTrace().frames {
-			if frame.IsEmpty() {
-				continue
-			}
-
-			traceSb.WriteString(frame.String() + ":\n")
-		}
-
-		msgErr, ok := err.(ErrorWithMessage)
-		if !ok {
-			traceSb.WriteString(err.Error())
-			break
-		}
-
-		msg := msgErr.Message()
-		errorSb.WriteString(msg)
-		traceSb.WriteString(">\t" + msg + "\n")
-
-		err = errors.Unwrap(err)
-		if err == nil {
-			break
-		}
-
-		errorSb.WriteString(",\n")
-		traceSb.WriteRune('\n')
-	}
-
-	return errorSb.String() + traceSb.String()
+	return err
 }
