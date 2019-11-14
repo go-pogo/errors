@@ -2,38 +2,27 @@ package errs
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/roeldev/go-fail"
 )
 
-var emptyErr = reflect.Indirect(reflect.ValueOf(errors.New(""))).Interface()
+var cmpOpts []cmp.Option
 
-// func TestPrint(t *testing.T) {
-// 	err1 := Err("foo error")
-// 	err2 := Wrap(err1)
-// 	err3 := Wrap(err2)
-//
-// 	have := err3.Error()
-// 	want := `foo error
-//
-// Trace:
-// support_test.go:13: errors.TestPrint():
-// support_test.go:12: errors.TestPrint():
-// support_test.go:11: errors.TestPrint():
-// >	foo error
-// `
-//
-// 	if have != want {
-// 		t.Error(fail.Diff{
-// 			Func: "errs.Print",
-// 			Msg:  "should create the same error output message",
-// 			Have: have,
-// 			Want: want,
-// 		})
-// 	}
-// }
+func init() {
+	errStr := errors.New("")
+	// error.errorString
+	errorString := reflect.Indirect(reflect.ValueOf(errStr)).Interface()
+	// fmt.wrapError
+	fmtWrapError := reflect.Indirect(reflect.ValueOf(fmt.Errorf("%w", errStr))).Interface()
+
+	cmpOpts = []cmp.Option{
+		cmp.AllowUnexported(err{}, wrapErr{}, ST{}, errorString, fmtWrapError),
+	}
+}
 
 func TestGetKind(t *testing.T) {
 	kind := func(str string) *Kind {
@@ -61,6 +50,10 @@ func TestGetKind(t *testing.T) {
 			err:  Wrap(Err("baz", "qux")),
 			want: kind("baz"),
 		},
+		"wrapped error error": {
+			err:  Wrapf(Err("baz", "qux"), "foo kind", "bar msg"),
+			want: kind("foo kind"),
+		},
 	}
 
 	for name, tc := range tests {
@@ -72,6 +65,7 @@ func TestGetKind(t *testing.T) {
 					Msg:  "should return a pointer to the Kind of the error, or nil",
 					Have: have,
 					Want: tc.want,
+					Opts: cmpOpts,
 				})
 			}
 		})
@@ -99,6 +93,10 @@ func TestGetMessage(t *testing.T) {
 			err:  Wrap(Err("baz", "qux")),
 			want: "qux",
 		},
+		"wrapped error error": {
+			err:  Wrapf(Err("baz", "qux"), "foo kind", "bar msg"),
+			want: "bar msg",
+		},
 	}
 
 	for name, tc := range tests {
@@ -110,6 +108,7 @@ func TestGetMessage(t *testing.T) {
 					Msg:  "should return a single error message a string, or empty when not available",
 					Have: have,
 					Want: tc.want,
+					Opts: cmpOpts,
 				})
 			}
 		})
@@ -118,41 +117,49 @@ func TestGetMessage(t *testing.T) {
 
 func TestGetStackTrace(t *testing.T) {
 	tests := map[string]struct {
-		err   error
-		stLen uint
+		err     error
+		wantNil bool
+		wantLen uint
 	}{
 		"nil": {
-			err:   nil,
-			stLen: 0,
+			err:     nil,
+			wantNil: true,
 		},
 		"primitive": {
-			err:   errors.New("foo bar"),
-			stLen: 0,
+			err:     errors.New("foo bar"),
+			wantNil: true,
 		},
 		"error": {
-			err:   Err("foo", "bar"),
-			stLen: 1,
+			err:     Err("foo", "bar"),
+			wantLen: 1,
 		},
 		"wrapped error": {
-			err:   Wrap(Err("baz", "qux")),
-			stLen: 2,
+			err:     Wrap(Err("baz", "qux")),
+			wantLen: 2,
+		},
+		"wrapped error error": {
+			err:     Wrapf(Err("baz", "qux"), "foo kind", "bar msg"),
+			wantLen: 1,
 		},
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			var have uint
-
 			st := GetStackTrace(tc.err)
-			if st != nil {
-				have = st.Len()
-			}
-
-			if have != tc.stLen {
-				t.Error(fail.Diff{
-					Func: "GetStackTrace",
-					Msg:  "should return a pointer to the stack trace of the error",
-				})
+			if st == nil {
+				if !tc.wantNil {
+					t.Error(fail.Msg{
+						Func: "GetStackTrace",
+						Msg:  "should return `nil` when error does not have a stack trace",
+					})
+				}
+			} else {
+				if st.Len() != tc.wantLen {
+					t.Error(fail.Msg{
+						Func: "GetStackTrace",
+						Msg:  "should return a pointer to the stack trace with the given length of the error",
+					})
+				}
 			}
 		})
 	}
@@ -160,21 +167,24 @@ func TestGetStackTrace(t *testing.T) {
 
 func TestUnwrapAll(t *testing.T) {
 	tests := map[string]struct {
-		err  error
-		want []error
-		fn   func(e error) []error
+		err    error
+		wantFn func(e error) []error
 	}{
 		"nil": {
-			err:  Wrap(nil),
-			want: []error{},
+			err: Wrap(nil),
+			wantFn: func(e error) []error {
+				return make([]error, 0, 0)
+			},
 		},
-		"primitive": {
-			err:  errors.New("foo bar"),
-			want: []error{errors.New("foo bar")},
+		"primitive error": {
+			err: errors.New("foo bar"),
+			wantFn: func(e error) []error {
+				return []error{errors.New("foo bar")}
+			},
 		},
 		"wrapped primitive": {
 			err: Wrap(errors.New("bar: baz")),
-			fn: func(e error) []error {
+			wantFn: func(e error) []error {
 				cause := errors.New("bar: baz")
 				return []error{
 					&wrapErr{st: GetStackTrace(e), err: cause},
@@ -184,7 +194,7 @@ func TestUnwrapAll(t *testing.T) {
 		},
 		"double wrapped primitive": {
 			err: Wrap(Wrap(errors.New("qux: xoo"))),
-			fn: func(e error) []error {
+			wantFn: func(e error) []error {
 				cause := errors.New("qux: xoo")
 				return []error{
 					&wrapErr{st: GetStackTrace(e), err: cause},
@@ -192,9 +202,26 @@ func TestUnwrapAll(t *testing.T) {
 				}
 			},
 		},
+		"primitive wrap": {
+			err: fmt.Errorf("cause: %w", errors.New("foo bar")),
+			wantFn: func(e error) []error {
+				return []error{e, errors.New("foo bar")}
+			},
+		},
+		"wrapped primitive wrap": {
+			err: Wrap(fmt.Errorf("cause: %w", errors.New("foo bar"))),
+			wantFn: func(e error) []error {
+				cause := errors.Unwrap(e)
+				return []error{
+					&wrapErr{st: GetStackTrace(e), err: cause},
+					cause, // fmt.wrapError
+					errors.New("foo bar"),
+				}
+			},
+		},
 		"error": {
 			err: Err("kind", "err msg"),
-			fn: func(e error) []error {
+			wantFn: func(e error) []error {
 				return []error{&err{
 					st:   GetStackTrace(e),
 					kind: "kind",
@@ -204,7 +231,7 @@ func TestUnwrapAll(t *testing.T) {
 		},
 		"wrapped error": {
 			err: Wrap(Err("kind", "err msg")),
-			fn: func(e error) []error {
+			wantFn: func(e error) []error {
 				return []error{&err{
 					st:   GetStackTrace(e),
 					kind: "kind",
@@ -214,7 +241,7 @@ func TestUnwrapAll(t *testing.T) {
 		},
 		"double wrapped error": {
 			err: Wrap(Wrap(Err("kind", "err msg"))),
-			fn: func(e error) []error {
+			wantFn: func(e error) []error {
 				return []error{&err{
 					st:   GetStackTrace(e),
 					kind: "kind",
@@ -222,27 +249,119 @@ func TestUnwrapAll(t *testing.T) {
 				}}
 			},
 		},
+		"wrapped error error": {
+			err: Wrapf(Err("baz", "qux"), "foo kind", "bar msg"),
+			wantFn: func(e error) []error {
+				wrErr := &err{
+					st:   GetStackTrace(errors.Unwrap(e)),
+					kind: "baz",
+					msg:  "qux",
+				}
+
+				return []error{
+					&err{
+						st:   GetStackTrace(e),
+						err:  wrErr,
+						kind: "foo kind",
+						msg:  "bar msg",
+					},
+					wrErr,
+				}
+			},
+		},
 	}
 
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			want := tc.want
-			if want == nil {
-				want = tc.fn(tc.err)
-			}
-			if want == nil {
-				t.Fatalf("TestUnwrapAll has an invalid test case `%s` that needs to be fixed", name)
-			}
-
+	for label, tc := range tests {
+		t.Run(label, func(t *testing.T) {
 			have := UnwrapAll(tc.err)
+			want := tc.wantFn(tc.err)
+
 			if !reflect.DeepEqual(have, want) {
-				diff := &fail.Diff{
+				t.Error(fail.Diff{
 					Func: "UnwrapAll",
 					Msg:  "should unwrap all and return a slice of errors",
 					Have: have,
 					Want: want,
+					Opts: cmpOpts,
+				})
+			}
+		})
+	}
+}
+
+func TestUnwrapCause(t *testing.T) {
+	tests := map[string]struct {
+		err    error
+		wantFn func(e error) error
+	}{
+		"primitive error": {
+			err: errors.New("foo bar"),
+			wantFn: func(e error) error {
+				return errors.New("foo bar")
+			},
+		},
+		"wrapped primitive error": {
+			err: Wrap(errors.New("foo bar")),
+			wantFn: func(e error) error {
+				return errors.New("foo bar")
+			},
+		},
+		"primitive wrap": {
+			err: fmt.Errorf("%w", errors.New("foo bar")),
+			wantFn: func(e error) error {
+				return errors.New("foo bar")
+			},
+		},
+		"wrapped primitive wrap": {
+			err: Wrap(fmt.Errorf("cause: %w", errors.New("baz"))),
+			wantFn: func(e error) error {
+				return errors.New("baz")
+			},
+		},
+		"error": {
+			err: Err("qux", "xoo"),
+			wantFn: func(e error) error {
+				return &err{
+					st:   GetStackTrace(e),
+					kind: "qux",
+					msg:  "xoo",
 				}
-				t.Error(diff.AllowUnexported(emptyErr, err{}, wrapErr{}, ST{}))
+			},
+		},
+		"wrapped error": {
+			err: Wrap(Err("qux", "xoo")),
+			wantFn: func(e error) error {
+				return &err{
+					st:   GetStackTrace(e),
+					kind: "qux",
+					msg:  "xoo",
+				}
+			},
+		},
+		"double wrapped error": {
+			err: Wrap(Wrap(Err("qux", "xoo"))),
+			wantFn: func(e error) error {
+				return &err{
+					st:   GetStackTrace(e),
+					kind: "qux",
+					msg:  "xoo",
+				}
+			},
+		},
+	}
+
+	for label, tc := range tests {
+		t.Run(label, func(t *testing.T) {
+			have := UnwrapCause(tc.err)
+			want := tc.wantFn(tc.err)
+
+			if !reflect.DeepEqual(have, want) {
+				t.Error(fail.Diff{
+					Func: "UnwrapCause",
+					Have: have,
+					Want: want,
+					Opts: cmpOpts,
+				})
 			}
 		})
 	}

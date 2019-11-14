@@ -70,6 +70,23 @@ func UnwrapAll(err error) []error {
 	return res
 }
 
+// func UnwrapDepth(err error, depth int) (error, bool) {
+// 	if depth <= 0 {
+// 		panic("UnwrapDepth: unwrapping with a depth lower than 1 is not possible")
+// 	}
+//
+// 	ok := true
+// 	for i := 0; i < depth; i++ {
+// 		if err == nil {
+// 			ok = false
+// 			break
+// 		}
+// 		err = errors.Unwrap(err)
+// 	}
+//
+// 	return err, ok
+// }
+
 // UnwrapCause walks through all wrapped errors and returns the first "cause" error.
 func UnwrapCause(err error) error {
 	for {
@@ -108,6 +125,10 @@ func Print(err error) string {
 		if !ok {
 			traceSb.WriteString(err.Error())
 			break
+		}
+
+		if kindErr, ok := err.(ErrorWithKind); ok {
+			errorSb.WriteString(kindErr.Kind().String() + ": ")
 		}
 
 		msg := msgErr.Message()

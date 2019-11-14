@@ -10,7 +10,6 @@ import (
 type Frame struct {
 	Path string // Path contains the file path of the function.
 	Line int    // Line contains the line number of the called function.
-	// Pkg  string // Pkg contains the name of the package of the function.
 	Func string // Func contains the full name of the called function.
 }
 
