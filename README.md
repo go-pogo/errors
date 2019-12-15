@@ -31,6 +31,28 @@ import "github.com/roeldev/go-errs"
 ```
 
 
+## Output examples
+
+Error that is created with `errs.Err()` and wrapped with `errs.Wrap()`:
+```text
+some error: something happened
+
+Trace:
+.../go-errs/examples/2_wrap/main.go:16: main.doSomething():
+.../go-errs/examples/2_wrap/main.go:10: main.someAction():
+> something happened
+```
+
+A json unmarshalling error that's wrapped with `errs.Wrap()`:
+```text
+invalid character 'i' looking for beginning of value
+
+Trace:
+.../go-errs/examples/3_wrap_existing/main.go:18: main.doSomething():
+> invalid character 'i' looking for beginning of value
+```
+
+
 ## Documentation
 Additional detailed documentation is available at [godoc.org][go-doc-url]
 
