@@ -128,14 +128,22 @@ func Print(err error) string {
 		}
 
 		if kindErr, ok := err.(ErrorWithKind); ok {
-			errorSb.WriteString(kindErr.Kind().String() + ": ")
+			kind := kindErr.Kind()
+			if kind != Unknown {
+				errorSb.WriteString(kind.String() + ": ")
+			}
 		}
 
 		msg := msgErr.Message()
 		errorSb.WriteString(msg)
 		traceSb.WriteString("> " + msg + "\n")
 
-		err = errors.Unwrap(err)
+		if wrapErr, ok := err.(wrapErr); ok {
+			err = errors.Unwrap(wrapErr.Unwrap())
+		} else {
+			err = errors.Unwrap(err)
+		}
+
 		if err == nil {
 			break
 		}

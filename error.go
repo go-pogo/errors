@@ -41,16 +41,6 @@ func (err wrapErr) Unwrap() error   { return err.err }
 func (err wrapErr) Message() string { return err.err.Error() }
 func (err wrapErr) Error() string   { return Print(err) }
 
-func (err wrapErr) Kind() Kind {
-	if err.err != nil {
-		if kErr, ok := err.err.(ErrorWithKind); ok {
-			return kErr.Kind()
-		}
-	}
-
-	return Unknown
-}
-
 // Err creates an error from a message.
 func Err(kind Kind, msg string) *err {
 	var err err
