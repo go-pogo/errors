@@ -133,7 +133,7 @@ func Print(err error) string {
 
 		msg := msgErr.Message()
 		errorSb.WriteString(msg)
-		traceSb.WriteString(">\t" + msg + "\n")
+		traceSb.WriteString("> " + msg + "\n")
 
 		err = errors.Unwrap(err)
 		if err == nil {
