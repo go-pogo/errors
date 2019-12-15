@@ -16,6 +16,19 @@ func (st *ST) Capture(skip uint) *Frame {
 	return nil
 }
 
+// CaptureMultiple captures multiple call frames and prepends them to the stack trace.
+func (st *ST) CaptureMultiple(skip uint, amount uint) []*Frame {
+	frames := make([]*Frame, amount)
+
+	var i uint
+	for i = 0; i < amount; i++ {
+		frames = append(frames, st.Capture(skip))
+		skip++
+	}
+
+	return frames
+}
+
 // Len returns the amount of frames within this stack trace.
 func (st ST) Len() uint {
 	return uint(len(st.frames))

@@ -76,7 +76,7 @@ func Wrapf(cause error, kind Kind, msg string, args ...interface{}) error {
 // Wrap wraps an existing error with information about the stack frame its called with. Errors that
 // implement the ErrorWithStackTrace interface add the frame to the existing stack trace. Other
 // "simple" errors are wrapped with a WrapError struct.
-func Wrap(cause error, skip ...uint) error {
+func Wrap(cause error, capture ...uint) error {
 	if cause == nil {
 		return nil
 	}
@@ -86,8 +86,17 @@ func Wrap(cause error, skip ...uint) error {
 		return cause
 	}
 
+	var skip, amount uint = 1, 1
+	switch len(capture) {
+	case 1:
+		skip = capture[0]
+	case 2:
+		skip = capture[0]
+		amount = capture[1]
+	}
+
 	var err wrapErr
-	return prepWrapError(&err, cause)
+	return prepWrapError(&err, cause, skip, amount)
 }
 
 func prepError(err *err, cause error, kind Kind, msg string) *err {
@@ -101,9 +110,9 @@ func prepError(err *err, cause error, kind Kind, msg string) *err {
 	return err
 }
 
-func prepWrapError(err *wrapErr, cause error) *wrapErr {
+func prepWrapError(err *wrapErr, cause error, skip uint, amount uint) *wrapErr {
 	err.st = NewStackTrace()
-	err.st.Capture(2)
+	err.st.CaptureMultiple(skip+1, amount)
 	err.err = cause
 
 	return err
