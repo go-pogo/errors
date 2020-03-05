@@ -20,49 +20,40 @@ func init() {
 	fmtWrapError := reflect.Indirect(reflect.ValueOf(fmt.Errorf("%w", errStr))).Interface()
 
 	cmpOpts = []cmp.Option{
-		cmp.AllowUnexported(err{}, wrapErr{}, ST{}, errorString, fmtWrapError),
+		cmp.AllowUnexported(Inner{}, wrapErr{}, ST{}, errorString, fmtWrapError),
 	}
 }
 
 func TestGetKind(t *testing.T) {
-	kind := func(str string) *Kind {
-		k := Kind(str)
-		return &k
-	}
-
 	tests := map[string]struct {
 		err  error
-		want *Kind
+		want Kind
 	}{
 		"nil": {
 			err:  nil,
-			want: nil,
+			want: UnknownKind,
 		},
 		"primitive": {
 			err:  errors.New("foo bar"),
-			want: nil,
+			want: UnknownKind,
 		},
 		"error": {
-			err:  Err("foo", "bar"),
-			want: kind("foo"),
+			err:  New(Kind("foo"), "bar"),
+			want: Kind("foo"),
 		},
 		"wrapped error": {
-			err:  Wrap(Err("baz", "qux")),
-			want: kind("baz"),
-		},
-		"wrapped error error": {
-			err:  Wrapf(Err("baz", "qux"), "foo kind", "bar msg"),
-			want: kind("foo kind"),
+			err:  Wrap(New(Kind("baz"), "qux")),
+			want: Kind("baz"),
 		},
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			have := GetKind(tc.err)
-			if !reflect.DeepEqual(have, tc.want) {
+			if have != tc.want {
 				t.Error(fail.Diff{
 					Func: "GetKind",
-					Msg:  "should return a pointer to the Kind of the error, or nil",
+					Msg:  "should return the Kind of the error, or UnknownKind",
 					Have: have,
 					Want: tc.want,
 					Opts: cmpOpts,
@@ -86,16 +77,12 @@ func TestGetMessage(t *testing.T) {
 			want: "",
 		},
 		"error": {
-			err:  Err("foo", "bar"),
+			err:  New(Kind("foo"), "bar"),
 			want: "bar",
 		},
 		"wrapped error": {
-			err:  Wrap(Err("baz", "qux")),
+			err:  Wrap(New(Kind("baz"), "qux")),
 			want: "qux",
-		},
-		"wrapped error error": {
-			err:  Wrapf(Err("baz", "qux"), "foo kind", "bar msg"),
-			want: "bar msg",
 		},
 	}
 
@@ -130,16 +117,12 @@ func TestGetStackTrace(t *testing.T) {
 			wantNil: true,
 		},
 		"error": {
-			err:     Err("foo", "bar"),
+			err:     New(Kind("foo"), "bar"),
 			wantLen: 1,
 		},
 		"wrapped error": {
-			err:     Wrap(Err("baz", "qux")),
+			err:     Wrap(New(Kind("baz"), "qux")),
 			wantLen: 2,
-		},
-		"wrapped error error": {
-			err:     Wrapf(Err("baz", "qux"), "foo kind", "bar msg"),
-			wantLen: 1,
 		},
 	}
 
@@ -154,10 +137,13 @@ func TestGetStackTrace(t *testing.T) {
 					})
 				}
 			} else {
-				if st.Len() != tc.wantLen {
-					t.Error(fail.Msg{
+				have := st.Len()
+				if have != tc.wantLen {
+					t.Error(fail.Diff{
 						Func: "GetStackTrace",
 						Msg:  "should return a pointer to the stack trace with the given length of the error",
+						Have: have,
+						Want: tc.wantLen,
 					})
 				}
 			}
@@ -214,57 +200,65 @@ func TestUnwrapAll(t *testing.T) {
 				cause := errors.Unwrap(e)
 				return []error{
 					&wrapErr{st: GetStackTrace(e), err: cause},
-					cause, // fmt.wrapError
+					cause,
 					errors.New("foo bar"),
 				}
 			},
 		},
 		"error": {
-			err: Err("kind", "err msg"),
+			err: New(Kind("kind"), "err msg"),
 			wantFn: func(e error) []error {
-				return []error{&err{
-					st:   GetStackTrace(e),
-					kind: "kind",
-					msg:  "err msg",
-				}}
+				return []error{
+					&err{Inner: Inner{
+						st:   GetStackTrace(e),
+						kind: "kind",
+						msg:  "err msg",
+					}},
+				}
 			},
 		},
 		"wrapped error": {
-			err: Wrap(Err("kind", "err msg")),
+			err: Wrap(New(Kind("kind"), "err msg")),
 			wantFn: func(e error) []error {
-				return []error{&err{
-					st:   GetStackTrace(e),
-					kind: "kind",
-					msg:  "err msg",
-				}}
+				return []error{
+					&err{Inner: Inner{
+						st:   GetStackTrace(e),
+						kind: "kind",
+						msg:  "err msg",
+					}},
+				}
 			},
 		},
 		"double wrapped error": {
-			err: Wrap(Wrap(Err("kind", "err msg"))),
+			err: Wrap(Wrap(New(Kind("kind"), "err msg"))),
 			wantFn: func(e error) []error {
-				return []error{&err{
-					st:   GetStackTrace(e),
-					kind: "kind",
-					msg:  "err msg",
-				}}
+				return []error{
+					&err{Inner: Inner{
+						st:   GetStackTrace(e),
+						kind: "kind",
+						msg:  "err msg",
+					}},
+				}
 			},
 		},
 		"wrapped error error": {
-			err: Wrapf(Err("baz", "qux"), "foo kind", "bar msg"),
+			err: New(New(Kind("baz"), "qux"), Kind("foo kind"), "bar msg"),
 			wantFn: func(e error) []error {
 				wrErr := &err{
-					st:   GetStackTrace(errors.Unwrap(e)),
-					kind: "baz",
-					msg:  "qux",
+					Inner: Inner{
+						st:   GetStackTrace(errors.Unwrap(e)),
+						kind: "baz",
+						msg:  "qux",
+					},
 				}
 
 				return []error{
-					&err{
+					&err{Inner: Inner{
 						st:   GetStackTrace(e),
 						err:  wrErr,
 						kind: "foo kind",
 						msg:  "bar msg",
-					},
+					}},
 					wrErr,
 				}
 			},
@@ -319,32 +313,38 @@ func TestUnwrapCause(t *testing.T) {
 			},
 		},
 		"error": {
-			err: Err("qux", "xoo"),
+			err: New(Kind("qux"), "xoo"),
 			wantFn: func(e error) error {
 				return &err{
-					st:   GetStackTrace(e),
-					kind: "qux",
-					msg:  "xoo",
+					Inner: Inner{
+						st:   GetStackTrace(e),
+						kind: "qux",
+						msg:  "xoo",
+					},
 				}
 			},
 		},
 		"wrapped error": {
-			err: Wrap(Err("qux", "xoo")),
+			err: Wrap(New(Kind("qux"), "xoo")),
 			wantFn: func(e error) error {
 				return &err{
-					st:   GetStackTrace(e),
-					kind: "qux",
-					msg:  "xoo",
+					Inner: Inner{
+						st:   GetStackTrace(e),
+						kind: "qux",
+						msg:  "xoo",
+					},
 				}
 			},
 		},
 		"double wrapped error": {
-			err: Wrap(Wrap(Err("qux", "xoo"))),
+			err: Wrap(Wrap(New(Kind("qux"), "xoo"))),
 			wantFn: func(e error) error {
 				return &err{
-					st:   GetStackTrace(e),
-					kind: "qux",
-					msg:  "xoo",
+					Inner: Inner{
+						st:   GetStackTrace(e),
+						kind: "qux",
+						msg:  "xoo",
+					},
 				}
 			},
 		},

@@ -15,20 +15,7 @@ type errWithKindFixture struct{}
 func (err errWithKindFixture) Kind() Kind    { return kindFixture }
 func (err errWithKindFixture) Error() string { return "" }
 
-func TestKind_String(t *testing.T) {
-	want := "foo"
-	have := Kind(want).String()
-	if have != want {
-		t.Error(fail.Diff{
-			Func: "Kind.String",
-			Msg:  "should return the string representation of the Kind",
-			Have: have,
-			Want: want,
-		})
-	}
-}
-
-func TestCreation(t *testing.T) {
+func TestNew(t *testing.T) {
 	tests := map[string]struct {
 		fnName    string
 		err       error
@@ -36,41 +23,36 @@ func TestCreation(t *testing.T) {
 		wantKind  Kind
 		wantMsg   string
 	}{
-		"Err": {
-			err:       Err("foo error", "bar message"),
+		"new with message": {
+			err:       New("foo message"),
+			wantCause: nil,
+			wantKind:  UnknownKind,
+			wantMsg:   "foo message",
+		},
+		"new with kind and message": {
+			err:       New(Kind("foo error"), "bar message"),
 			wantCause: nil,
 			wantKind:  Kind("foo error"),
 			wantMsg:   "bar message",
 		},
-		"Errf": {
-			err:       Errf("another error", "so %s, much %s", "err", "problems"),
-			wantCause: nil,
-			wantKind:  Kind("another error"),
-			wantMsg:   "so err, much problems",
-		},
-		"Wrapf": {
-			err:       Wrapf(errors.New("underlying err"), "qux error", "caused by"),
+		"new with cause, kind and message": {
+			err:       New(errors.New("underlying err"), Kind("qux error"), "caused by"),
 			wantCause: errors.New("underlying err"),
 			wantKind:  Kind("qux error"),
 			wantMsg:   "caused by",
 		},
-		"Wrapf nil": {
-			fnName:    "Wrapf",
-			err:       Wrapf(nil, "ignore me", "no err so no msg"),
-			wantCause: nil,
-		},
-		"Wrap": {
+		"wrap": {
 			err:       Wrap(errors.New("cause")),
 			wantCause: errors.New("cause"),
-			wantKind:  Unknown,
+			wantKind:  UnknownKind,
 			wantMsg:   "cause",
 		},
-		"Wrap nil": {
+		"wrap nil": {
 			fnName:    "Wrap",
 			err:       Wrap(nil),
 			wantCause: nil,
 		},
-		"Wrap error with kind": {
+		"wrap cause with kind": {
 			fnName:    "Wrap",
 			err:       Wrap(errWithKindFixture{}),
 			wantCause: errWithKindFixture{},
@@ -133,10 +115,23 @@ func TestCreation(t *testing.T) {
 	}
 }
 
+func TestNew_print(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error(fail.Msg{
+				Func: "New",
+				Msg:  "should panic when receiving no arguments",
+			})
+		}
+	}()
+
+	_ = New()
+}
+
 func TestErrorPrint(t *testing.T) {
 	tests := map[string]error{
-		"err":     Err("foo", "bar baz"),
-		"wrapErr": Wrap(errors.New("foo: bar")),
+		"err": New("foo", "bar baz"),
+		// "wrapErr": Wrap(errors.New("foo: bar")),
 	}
 
 	for name, err := range tests {
