@@ -2,41 +2,46 @@ package errs
 
 import (
 	"errors"
-	"strings"
 )
 
 // ErrorWithKind interfaces provide access to a Kind.
 type ErrorWithKind interface {
+	error
 	Kind() Kind
 }
 
-// ErrorWithMessage interfaces provide access to the error message without underlying error messages.
+// ErrorWithMessage interfaces provide access to the plain error message without
+// returning any of the underlying error messages.
 type ErrorWithMessage interface {
+	error
 	Message() string
 }
 
 // ErrorWithStackTrace interfaces provide access to a stack trace.
 type ErrorWithStackTrace interface {
+	error
 	StackTrace() *ST
 }
 
-// ErrorWithUnwrap interfaces provide access to an Unwrap method which may return an underlying error.
+// ErrorWithUnwrap interfaces provide access to an `Unwrap` method which may
+// return an underlying error.
 type ErrorWithUnwrap interface {
+	error
 	Unwrap() error
 }
 
-// GetKind returns a pointer to the Kind of the error if it implements the ErrorWithKind interface.
-func GetKind(err error) *Kind {
+// GetKind returns a pointer to the `Kind` of the error if it implements the
+// `ErrorWithKind` interface.
+func GetKind(err error) Kind {
 	if e, ok := err.(ErrorWithKind); ok {
-		k := e.Kind()
-		return &k
+		return e.Kind()
 	}
 
-	return nil
+	return UnknownKind
 }
 
-// GetMessage returns the message string of the error if if implements the ErrorWithMessage
-// interface. If not, it returns an empty string.
+// GetMessage returns the message string of the error if if implements the
+// `ErrorWithMessage` interface. If not, it returns an empty string.
 func GetMessage(err error) string {
 	if e, ok := err.(ErrorWithMessage); ok {
 		return e.Message()
@@ -45,8 +50,8 @@ func GetMessage(err error) string {
 	return ""
 }
 
-// GetStackTrace returns a pointer to the stack trace of the error if it implements the
-// ErrorWithStackTrace interface.
+// GetStackTrace returns a pointer to the stack trace of the error if it
+// implements the `ErrorWithStackTrace` interface.
 func GetStackTrace(err error) *ST {
 	if e, ok := err.(ErrorWithStackTrace); ok {
 		return e.StackTrace()
@@ -55,7 +60,8 @@ func GetStackTrace(err error) *ST {
 	return nil
 }
 
-// UnwrapAll returns the complete stack of errors starting with the supplied error.
+// UnwrapAll returns the complete stack of errors, starting with the supplied
+// error and ending with the cause error.
 func UnwrapAll(err error) []error {
 	res := make([]error, 0, 0)
 
@@ -87,7 +93,8 @@ func UnwrapAll(err error) []error {
 // 	return err, ok
 // }
 
-// UnwrapCause walks through all wrapped errors and returns the first "cause" error.
+// UnwrapCause walks through all wrapped errors and returns the first "cause"
+// error.
 func UnwrapCause(err error) error {
 	for {
 		wErr := errors.Unwrap(err)
