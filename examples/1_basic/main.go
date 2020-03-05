@@ -7,7 +7,7 @@ import (
 )
 
 func doSomething() error {
-	return errs.Err("some error", "something happened")
+	return errs.New("some error", "something happened")
 }
 
 func main() {

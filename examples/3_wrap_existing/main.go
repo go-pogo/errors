@@ -14,10 +14,7 @@ func someAction() error {
 
 func doSomething() error {
 	err := someAction()
-	if err != nil {
-		return errs.Wrap(err)
-	}
-	return nil
+	return errs.Wrap(err)
 }
 
 func main() {
