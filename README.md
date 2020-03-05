@@ -2,30 +2,27 @@ go-errs
 =======
 
 [![Latest release][latest-release-img]][latest-release-url]
-[![Travis build status][travis-build-img]][travis-build-url]
-[![Go Report Card][go-report-img]][go-report-url]
-[![GoDoc documentation][go-doc-img]][go-doc-url]
+[![Build status][build-status-img]][build-status-url]
+[![Go Report Card][report-img]][report-url]
+[![Documentation][doc-img]][doc-url]
+![Minimal Go version][go-version-img]
 
 [latest-release-img]: https://img.shields.io/github/release/roeldev/go-errs.svg?label=latest
 [latest-release-url]: https://github.com/roeldev/go-errs/releases
-[travis-build-img]: https://img.shields.io/travis/roeldev/go-errs.svg
-[travis-build-url]: https://travis-ci.org/roeldev/go-errs
-[go-report-img]: https://goreportcard.com/badge/github.com/roeldev/go-errs
-[go-report-url]: https://goreportcard.com/report/github.com/roeldev/go-errs
-[go-doc-img]: https://godoc.org/github.com/roeldev/go-errs?status.svg
-[go-doc-url]: https://godoc.org/github.com/roeldev/go-errs
-
-Working with errors in Go can be annoying. This package tries to solve some of these problems by adding information of the origin of the created error.
-The package is easily used with custom error types if needed, but should provide plenty of features for you average error message.
+[build-status-img]: https://github.com/roeldev/go-errs/workflows/Go/badge.svg
+[build-status-url]: https://github.com/roeldev/go-errs/actions?query=workflow%3AGo
+[report-img]: https://goreportcard.com/badge/github.com/roeldev/go-errs
+[report-url]: https://goreportcard.com/report/github.com/roeldev/go-errs
+[doc-img]: https://godoc.org/github.com/roeldev/go-errs?status.svg
+[doc-url]: https://pkg.go.dev/github.com/roeldev/go-errs
 
 
-## Install
+Errs is a Go package designed to make working with (custom) errors an easy task. It supports adding stacktrace frames so tracing the cause of an error is a breeze. 
+
+
 ```sh
 go get github.com/roeldev/go-errs
 ```
-
-
-## Import
 ```go
 import "github.com/roeldev/go-errs"
 ```
@@ -54,11 +51,11 @@ Trace:
 
 
 ## Documentation
-Additional detailed documentation is available at [godoc.org][go-doc-url]
+Additional detailed documentation is available at [go.dev][doc-url]
 
 
 ### Created with
-<a href="https://www.jetbrains.com/?from=roeldev/go-errs" target="_blank"><img src="https://pbs.twimg.com/profile_images/809358866442055680/CZjD2GYK_400x400.jpg" width="35" /></a>
+<a href="https://www.jetbrains.com/?from=roeldev/go-errs" target="_blank"><img src="https://pbs.twimg.com/profile_images/1206615658638856192/eiS7UWLo_400x400.jpg" width="35" /></a>
 
 
 ## License
