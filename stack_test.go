@@ -20,24 +20,24 @@ func TestNewStackTrace(t *testing.T) {
 func TestST_Capture(t *testing.T) {
 	st := NewStackTrace()
 
-	frame := st.Capture(1)
-	if frame == nil || st.Len() != 1 {
+	frame, ok := st.Capture(1)
+	if !ok || frame == nilFrame || st.Len() != 1 {
 		t.Error(fail.Msg{
 			Func: "ST.Capture",
 			Msg:  "should capture a Frame and add it to the stack",
 		})
 	}
 
-	frame = st.Capture(1)
-	if frame == nil || st.Len() != 2 {
+	frame, ok = st.Capture(1)
+	if !ok || frame == nilFrame || st.Len() != 2 {
 		t.Error(fail.Msg{
 			Func: "ST.Capture",
 			Msg:  "should capture a second Frame and add it to the stack",
 		})
 	}
 
-	frame = st.Capture(9999)
-	if frame != nil || st.Len() != 2 {
+	frame, ok = st.Capture(9999)
+	if ok || frame != nilFrame || st.Len() != 2 {
 		t.Error(fail.Msg{
 			Func: "ST.Capture",
 			Msg:  "should only add a Frame to the stack when its not empty",
@@ -47,7 +47,9 @@ func TestST_Capture(t *testing.T) {
 
 func TestST_Frames(t *testing.T) {
 	st := NewStackTrace()
-	want := []Frame{*st.Capture(1)}
+	frame, _ := st.Capture(1)
+
+	want := []Frame{frame}
 	have := st.Frames()
 
 	if !reflect.DeepEqual(have, want) {

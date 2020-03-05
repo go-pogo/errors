@@ -10,7 +10,7 @@ func TestFrame_IsEmpty(t *testing.T) {
 	var frame Frame
 	if !frame.IsEmpty() {
 		t.Error(fail.Msg{
-			Func: "errs.Frame.IsEmpty",
+			Func: "Frame.IsEmpty",
 			Msg:  "should return true on empty frame",
 		})
 	}
@@ -18,7 +18,7 @@ func TestFrame_IsEmpty(t *testing.T) {
 	frame = Frame{}
 	if !frame.IsEmpty() {
 		t.Error(fail.Msg{
-			Func: "errs.Frame.IsEmpty",
+			Func: "Frame.IsEmpty",
 			Msg:  "should return true on empty frame",
 		})
 	}
@@ -47,7 +47,7 @@ func TestFrame_String(t *testing.T) {
 			have := tc.subj.String()
 			if have != tc.want {
 				t.Error(fail.Diff{
-					Func: "errs.Frame.String",
+					Func: "Frame.String",
 					Have: have,
 					Want: tc.want,
 				})

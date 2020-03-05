@@ -1,12 +1,15 @@
 package errs
 
 import (
+	"fmt"
 	"runtime"
-	"strconv"
+	"strings"
 )
 
-// Frame is a single step in a stack trace and contains information about the function and its
-// package, file and line location.
+var nilFrame Frame
+
+// Frame is a single step in a stack trace and contains information about the
+// function and its package, file and line location.
 type Frame struct {
 	Path string // Path contains the file path of the function.
 	Line int    // Line contains the line number of the called function.
@@ -24,12 +27,12 @@ func (f Frame) String() string {
 		return ""
 	}
 
-	return f.Path + ":" + strconv.Itoa(f.Line) + ": " + f.Func + "()"
+	return fmt.Sprintf("%s:%d: %s()", f.Path, f.Line, f.Func)
 }
 
-// GetFrame gets a frame from the call stack. Skip indicates the amount of frames that have to be
-// skipped before the right frame is to be returned. It returns an empty frame with `ok` as
-// `false` when an error occurs.
+// GetFrame gets a frame from the call stack. Skip indicates the amount of
+// frames that have to be skipped before the right frame is to be returned.
+// It returns an empty frame with `ok` as `false` when an error occurs.
 func GetFrame(skip uint) (frame Frame, ok bool) {
 	pc, path, line, ok := runtime.Caller(int(skip + 1))
 	if !ok {
@@ -48,4 +51,17 @@ func GetFrame(skip uint) (frame Frame, ok bool) {
 	}
 
 	return frame, true
+}
+
+func isRuntimeCall(frame Frame) bool {
+	if strings.HasPrefix(frame.Func, "runtime.") &&
+		strings.Index(frame.Path, "runtime") > 0 {
+		return true
+	}
+	if frame.Func == "testing.tRunner()" &&
+		strings.HasSuffix(frame.Path, "testing.go") {
+		return true
+	}
+
+	return false
 }

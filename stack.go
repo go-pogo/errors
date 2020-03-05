@@ -1,28 +1,48 @@
 package errs
 
+// NewStackTrace creates a new empty stack trace `ST`.
+func NewStackTrace() *ST {
+	return &ST{
+		frames: make([]Frame, 0),
+	}
+}
+
+// NewStackTrace creates a new empty stack trace `ST` and captures a call frame.
+// See `ST.Capture()` for additional information about capturing cal frames.
+func NewStackTraceCapture(skip uint) *ST {
+	st := NewStackTrace()
+	st.Capture(skip)
+
+	return st
+}
+
 // ST is a stack of Frames from innermost (newest) to outermost (oldest).
 type ST struct {
 	frames []Frame
 }
 
 // Capture a call frame and prepend it to the stack trace.
-func (st *ST) Capture(skip uint) *Frame {
-	frame, ok := GetFrame(skip + 1)
+func (st *ST) Capture(skip uint) (frame Frame, ok bool) {
+	frame, ok = GetFrame(skip + 1)
 	if ok {
 		st.frames = prepend(st.frames, frame)
-		return &frame
 	}
-
-	return nil
+	return
 }
 
 // CaptureMultiple captures multiple call frames and prepends them to the stack trace.
-func (st *ST) CaptureMultiple(skip uint, amount uint) []*Frame {
-	frames := make([]*Frame, amount)
+func (st *ST) CaptureMultiple(skip uint, amount uint, includeRuntime bool) []Frame {
+	frames := make([]Frame, amount)
 
 	var i uint
 	for i = 0; i < amount; i++ {
-		frames = append(frames, st.Capture(skip))
+		frame, ok := GetFrame(skip + 1)
+		if !ok || (!includeRuntime && isRuntimeCall(frame)) {
+			break
+		}
+
+		st.frames = prepend(st.frames, frame)
+		frames = append(frames, frame)
 		skip++
 	}
 
@@ -37,17 +57,6 @@ func (st ST) Len() uint {
 // Frames returns all captured frames.
 func (st ST) Frames() []Frame {
 	return st.frames
-}
-
-// NewStackTrace creates a new empty stack trace ST.
-func NewStackTrace() *ST {
-	var st ST
-	return prepStackTrace(&st)
-}
-
-func prepStackTrace(st *ST) *ST {
-	st.frames = []Frame{}
-	return st
 }
 
 func prepend(slice []Frame, frame Frame) []Frame {
