@@ -30,8 +30,8 @@ type ErrorWithUnwrap interface {
 	Unwrap() error
 }
 
-// GetKind returns a pointer to the `Kind` of the error if it implements the
-// `ErrorWithKind` interface.
+// GetKind returns the `Kind` of the error if it implements the `ErrorWithKind`
+// interface. If not, it returns `UnknownKind`.
 func GetKind(err error) Kind {
 	if e, ok := err.(ErrorWithKind); ok {
 		return e.Kind()
@@ -48,6 +48,24 @@ func GetMessage(err error) string {
 	}
 
 	return ""
+}
+
+// GetKindMessage returns the message string of the error with its `Kind` as
+// prefix. If `Kind` is of `UnknownKind` the prefix is omitted. If message is
+// empty, the string value of the `Kind` is returned.
+// An empty string is returned when both `Kind` and message are empty.
+func GetKindMessage(err error) string {
+	kind := GetKind(err)
+	if kind == UnknownKind {
+		return GetMessage(err)
+	}
+
+	msg := GetMessage(err)
+	if msg == "" {
+		return kind.String()
+	}
+
+	return kind.String() + ": " + msg
 }
 
 // GetStackTrace returns a pointer to the stack trace of the error if it

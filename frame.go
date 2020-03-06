@@ -1,7 +1,6 @@
 package errs
 
 import (
-	"fmt"
 	"runtime"
 	"strings"
 )
@@ -19,15 +18,6 @@ type Frame struct {
 // IsEmpty returns true when the Frame is created with all empty fields.
 func (f Frame) IsEmpty() bool {
 	return f.Path == "" && f.Line == 0 && f.Func == ""
-}
-
-// String returns the string representation of the Frame.
-func (f Frame) String() string {
-	if f.IsEmpty() {
-		return ""
-	}
-
-	return fmt.Sprintf("%s:%d: %s()", f.Path, f.Line, f.Func)
 }
 
 // GetFrame gets a frame from the call stack. Skip indicates the amount of

@@ -48,9 +48,9 @@ type err struct{ Inner }
 // Error returns the human-readable error report using the `Print` function.
 func (err err) Error() string { return Print(err) }
 
-// wrapErr is a wrapper for "primitive" errors that do not have stack trace information. It does
-// not contain an error message by itself and always displays the message of the underlying
-// wrapped error.
+// wrapErr is a wrapper for "primitive" errors that do not have stack trace
+// information. It does not contain an error message by itself and always
+// displays the message of the underlying wrapped error.
 type wrapErr struct {
 	st  *ST
 	err error
@@ -58,8 +58,7 @@ type wrapErr struct {
 
 func (err wrapErr) StackTrace() *ST { return err.st }
 
-// Unwrap returns the next error in the error chain. It returns `nil` if there
-// is no next error.
+// Unwrap returns the original underlying "primitive" error that resides inside.
 func (err wrapErr) Unwrap() error { return err.err }
 
 // Message returns the original error of the underlying error.

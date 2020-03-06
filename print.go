@@ -2,46 +2,29 @@ package errs
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 )
 
 // Print returns the complete error stack as a human-readable formatted string.
 func Print(err error) string {
-	errorSb := &strings.Builder{}
-	traceSb := &strings.Builder{}
-	traceSb.WriteString("\n\nTrace:\n")
+	p := printer{
+		esb:  new(strings.Builder),
+		tsb:  new(strings.Builder),
+		eSep: "\n",
+		tSep: ",\n",
+	}
+
+	p.tsb.WriteString("\n\nTrace:\n")
 
 	for {
 		stErr, ok := err.(ErrorWithStackTrace)
 		if !ok {
-			errorSb.WriteString(err.Error())
+			p.WritePlainError(err)
 			break
 		}
 
-		for _, frame := range stErr.StackTrace().frames {
-			if frame.IsEmpty() {
-				continue
-			}
-
-			traceSb.WriteString(frame.String() + ":\n")
-		}
-
-		msgErr, ok := err.(ErrorWithMessage)
-		if !ok {
-			traceSb.WriteString(err.Error())
-			break
-		}
-
-		if kindErr, ok := err.(ErrorWithKind); ok {
-			kind := kindErr.Kind()
-			if kind != UnknownKind {
-				errorSb.WriteString(kind.String() + ": ")
-			}
-		}
-
-		msg := msgErr.Message()
-		errorSb.WriteString(msg)
-		traceSb.WriteString("> " + msg + "\n")
+		p.WriteErrorWithStackTrace(stErr)
 
 		if wrapErr, ok := err.(wrapErr); ok {
 			err = errors.Unwrap(wrapErr.Unwrap())
@@ -52,10 +35,47 @@ func Print(err error) string {
 		if err == nil {
 			break
 		}
-
-		errorSb.WriteString(",\n")
-		traceSb.WriteRune('\n')
 	}
 
-	return errorSb.String() + traceSb.String()
+	return p.String()
+}
+
+type printer struct {
+	esb  *strings.Builder // error messages
+	tsb  *strings.Builder // stack trace
+	eSep string           // separator for error messages
+	tSep string           // separator for stack traces
+}
+
+func (p printer) WritePlainError(err error) {
+	p.esb.WriteString(err.Error())
+}
+
+func (p printer) WriteErrorWithStackTrace(err ErrorWithStackTrace) {
+	msg := GetKindMessage(err)
+	p.esb.WriteString(msg + p.eSep)
+
+	st := err.StackTrace()
+	if st == nil {
+		return
+	}
+
+	for _, frame := range st.frames {
+		if frame.IsEmpty() {
+			continue
+		}
+
+		p.WriteFrame(frame)
+	}
+
+	fmt.Fprintf(p.tsb, "> %s\n%s", msg, p.tSep)
+}
+
+func (p printer) WriteFrame(f Frame) {
+	fmt.Fprintf(p.tsb, "%s:%d: %s()\n", f.Path, f.Line, f.Func)
+}
+
+func (p printer) String() string {
+	return strings.TrimSuffix(p.esb.String(), p.eSep) +
+		strings.TrimSuffix(p.tsb.String(), p.tSep)
 }
