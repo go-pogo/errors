@@ -25,7 +25,7 @@ type ST struct {
 func (st *ST) Capture(skip uint) (frame Frame, ok bool) {
 	frame, ok = GetFrame(skip + 1)
 	if ok {
-		st.frames = prepend(st.frames, frame)
+		st.frames = append(st.frames, frame)
 	}
 	return
 }
