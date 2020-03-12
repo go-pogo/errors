@@ -8,114 +8,86 @@ import (
 	"github.com/roeldev/go-fail"
 )
 
-const kindFixture Kind = "foo bar baz"
-
-type errWithKindFixture struct{}
-
-func (err errWithKindFixture) Kind() Kind    { return kindFixture }
-func (err errWithKindFixture) Error() string { return "" }
-
 func TestNew(t *testing.T) {
 	tests := map[string]struct {
-		fnName    string
-		err       error
-		wantCause error
-		wantKind  Kind
-		wantMsg   string
+		input []interface{}
+		inner Inner
 	}{
-		"new with message": {
-			err:       New("foo message"),
-			wantCause: nil,
-			wantKind:  UnknownKind,
-			wantMsg:   "foo message",
+		"with message": {
+			input: []interface{}{"foo message"},
+			inner: Inner{
+				kind: UnknownKind,
+				msg:  "foo message",
+			},
 		},
-		"new with kind and message": {
-			err:       New(Kind("foo error"), "bar message"),
-			wantCause: nil,
-			wantKind:  Kind("foo error"),
-			wantMsg:   "bar message",
+		"with kind and message": {
+			input: []interface{}{Kind("foo error"), "bar message"},
+			inner: Inner{
+				kind: Kind("foo error"),
+				msg:  "bar message",
+			},
 		},
-		"new with cause, kind and message": {
-			err:       New(errors.New("underlying err"), Kind("qux error"), "caused by"),
-			wantCause: errors.New("underlying err"),
-			wantKind:  Kind("qux error"),
-			wantMsg:   "caused by",
-		},
-		"wrap": {
-			err:       Wrap(errors.New("cause")),
-			wantCause: errors.New("cause"),
-			wantKind:  UnknownKind,
-			wantMsg:   "cause",
-		},
-		"wrap nil": {
-			fnName:    "Wrap",
-			err:       Wrap(nil),
-			wantCause: nil,
-		},
-		"wrap cause with kind": {
-			fnName:    "Wrap",
-			err:       Wrap(errWithKindFixture{}),
-			wantCause: errWithKindFixture{},
-			wantKind:  kindFixture,
+		"with cause, kind and message": {
+			input: []interface{}{errors.New("underlying err"), Kind("qux error"), "caused by"},
+			inner: Inner{
+				err:  errors.New("underlying err"),
+				kind: Kind("qux error"),
+				msg:  "caused by",
+			},
 		},
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			if tc.fnName == "" {
-				tc.fnName = name
+			newErr := New(tc.input...)
+			tcErr, ok := newErr.(*err)
+			if !ok {
+				t.Fatal(fail.Diff{
+					Func: "New",
+					Msg:  "should return a type of `*err`",
+					Have: reflect.TypeOf(newErr).String(),
+					Want: reflect.TypeOf(&err{}).String(),
+				})
 			}
 
-			if err, ok := tc.err.(ErrorWithStackTrace); ok {
-				st := err.StackTrace()
-				if st == nil || st.Len() == 0 {
-					t.Error(fail.Msg{
-						Func: tc.fnName,
-						Msg:  "should create an error with a stack trace",
-					})
-				}
+			if tcErr.StackTrace().Len() == 0 {
+				t.Error(fail.Msg{
+					Func: "New",
+					Msg:  "should create an error with a stack trace",
+				})
 			}
 
-			if err, ok := tc.err.(ErrorWithUnwrap); ok {
-				have := err.Unwrap()
-				if !reflect.DeepEqual(have, tc.wantCause) {
-					t.Error(fail.Diff{
-						Func: tc.fnName,
-						Msg:  "should create an error with given cause error",
-						Have: have,
-						Want: tc.wantCause,
-					})
-				}
+			if have := tcErr.Unwrap(); !reflect.DeepEqual(have, tc.inner.err) {
+				t.Error(fail.Diff{
+					Func: "New",
+					Msg:  "should create an error with given cause error",
+					Have: have,
+					Want: tc.inner.err,
+				})
 			}
 
-			if err, ok := tc.err.(ErrorWithKind); ok {
-				have := err.Kind()
-				if have != tc.wantKind {
-					t.Error(fail.Diff{
-						Func: tc.fnName,
-						Msg:  "should create an error with given kind",
-						Have: have,
-						Want: tc.wantKind,
-					})
-				}
+			if have := tcErr.Kind(); have != tc.inner.kind {
+				t.Error(fail.Diff{
+					Func: "New",
+					Msg:  "should create an error with given kind",
+					Have: have,
+					Want: tc.inner.kind,
+				})
 			}
 
-			if err, ok := tc.err.(ErrorWithMessage); ok {
-				have := err.Message()
-				if have != tc.wantMsg {
-					t.Error(fail.Diff{
-						Func: tc.fnName,
-						Msg:  "should create an error with given message",
-						Have: have,
-						Want: tc.wantMsg,
-					})
-				}
+			if have := tcErr.Message(); have != tc.inner.msg {
+				t.Error(fail.Diff{
+					Func: "New",
+					Msg:  "should create an error with given message",
+					Have: have,
+					Want: tc.inner.msg,
+				})
 			}
 		})
 	}
 }
 
-func TestNew_print(t *testing.T) {
+func TestNew__panic(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
 			t.Error(fail.Msg{
@@ -128,24 +100,75 @@ func TestNew_print(t *testing.T) {
 	_ = New()
 }
 
-func TestErrorPrint(t *testing.T) {
-	tests := map[string]error{
-		"err": New("foo", "bar baz"),
-		// "wrapErr": Wrap(errors.New("foo: bar")),
+func TestWrap(t *testing.T) {
+	want := New("cause")
+	var stLen uint = 0
+	if st := GetStackTrace(want); st != nil {
+		stLen = st.Len()
 	}
 
-	for name, err := range tests {
-		t.Run(name, func(t *testing.T) {
-			have := err.Error()
-			want := Print(err)
-			if have != want {
-				t.Error(fail.Diff{
-					Func: name + ".Error",
-					Msg:  "should use the Print() util function to create the error message",
-					Have: have,
-					Want: want,
-				})
-			}
+	have := Wrap(want)
+	if have != want {
+		t.Error(fail.Diff{
+			Func: "Wrap",
+			Msg:  "should return the same error used as input",
+			Have: have,
+			Want: want,
+		})
+	}
+
+	st := GetStackTrace(have)
+	if st != nil && st.Len() <= stLen {
+		t.Error(fail.Msg{
+			Func: "Wrap",
+			Msg:  "should capture an extra stack trace frame",
+		})
+	}
+}
+
+func TestWrap__nil(t *testing.T) {
+	if Wrap(nil) != nil {
+		t.Error(fail.Msg{
+			Func: "Wrap",
+			Msg:  "should return nil on nil input",
+		})
+	}
+}
+
+func TestWrap__primitive(t *testing.T) {
+	cause := errors.New("cause")
+	wrapped, ok := Wrap(cause).(*wrapErr)
+	if !ok {
+		t.Fatal(fail.Diff{
+			Func: "Wrap",
+			Msg:  "should wrap a primitive error with a wrapErr type",
+			Have: reflect.TypeOf(wrapped).String(),
+			Want: reflect.TypeOf(&wrapErr{}).String(),
+		})
+	}
+
+	if wrapped.StackTrace().Len() < 1 {
+		t.Error(fail.Msg{
+			Func: "Wrap",
+			Msg:  "should at least capture one stack trace frame",
+		})
+	}
+
+	if have := wrapped.Unwrap(); have != cause {
+		t.Error(fail.Diff{
+			Func: "wrapErr.Unwrap",
+			Msg:  "should return the same error instance used as input",
+			Have: have,
+			Want: cause,
+		})
+	}
+
+	if have := wrapped.Message(); have != cause.Error() {
+		t.Error(fail.Diff{
+			Func: "wrapErr.Message",
+			Msg:  "should return the same error message as the error used as input",
+			Have: have,
+			Want: cause.Error(),
 		})
 	}
 }
