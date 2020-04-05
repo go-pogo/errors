@@ -34,7 +34,7 @@ func TestMakeInnerWith(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			have := MakeInnerWith(tc.args...)
-			have.st = tc.want.st
+			have.frames = tc.want.frames
 
 			if !reflect.DeepEqual(have, tc.want) {
 				t.Error(fail.Diff{
