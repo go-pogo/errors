@@ -27,25 +27,27 @@ import "github.com/roeldev/go-errs"
 ```
 
 
-## Output examples
+## Creating an error
 
-Error that is created with `errs.Err()` and wrapped with `errs.Wrap()`:
+## Wrapping existing errors
+
+Error that is created with `errs.New()` and has an additional stack frame captured `errs.Trace()`:
 ```text
-some error: something happened
-
-Trace:
-.../go-errs/examples/2_wrap/main.go:16: main.doSomething():
-.../go-errs/examples/2_wrap/main.go:10: main.someAction():
-> something happened
+some error: something happened:
+    main.doSomething
+       .../go-errs/examples/2_trace/main.go:17
+    main.someAction
+       .../go-errs/examples/2_trace/main.go:12
 ```
 
-A json unmarshalling error that's wrapped with `errs.Wrap()`:
+A json unmarshalling error that's traced with `errs.Trace()`:
 ```text
-invalid character 'i' looking for beginning of value
-
-Trace:
-.../go-errs/examples/3_wrap_existing/main.go:18: main.doSomething():
-> invalid character 'i' looking for beginning of value
+some error: something bad happened while performing someAction:
+    main.someAction
+        .../go-errs/examples/3_trace_existing/main.go:22
+  - invalid character 'i' looking for beginning of value:
+        main.unmarshal
+            .../go-errs/examples/3_trace_existing/main.go:16
 ```
 
 
@@ -58,4 +60,4 @@ Additional detailed documentation is available at [go.dev][doc-url]
 
 
 ## License
-[GPL-3.0+](LICENSE) © 2019 [Roel Schut](https://roelschut.nl)
+[GPL-3.0+](LICENSE) © 2019-2020 [Roel Schut](https://roelschut.nl)
