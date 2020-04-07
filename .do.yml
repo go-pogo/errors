@@ -9,6 +9,6 @@ test: |
   go tool cover -func=coverage.out
 
 example1: go run -race ./examples/1_basic/main.go
-example2: go run -race ./examples/2_wrap/main.go
-example3: go run -race ./examples/3_wrap_existing/main.go
+example2: go run -race ./examples/2_trace/main.go
+example3: go run -race ./examples/3_trace_existing/main.go
 example4: go run -race ./examples/4_custom_error/main.go
