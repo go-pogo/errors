@@ -1,28 +1,27 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/roeldev/go-errs"
 )
 
+const SomeError errs.Kind = "some error"
+
 func someAction() error {
-	dest := new(struct{})
-	return json.Unmarshal([]byte("invalid json"), dest)
+	return errs.New(SomeError, "something happened")
 }
 
 func doSomething() error {
 	err := someAction()
-	if err != nil {
-		return errs.Wrap(err)
-	}
-	return nil
+	return errs.Trace(err)
 }
 
 func main() {
 	err := doSomething()
 	if err != nil {
-		fmt.Print(err)
+		fmt.Printf("%v\n", err)
+		fmt.Println("//////////")
+		fmt.Printf("%+v\n", err)
 	}
 }

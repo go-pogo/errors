@@ -2,99 +2,113 @@ package errs
 
 import (
 	"fmt"
+	"strings"
 )
 
-// Unknown indicates an error is not created with a distinct kind.
-const Unknown Kind = ""
+const (
+	// UnknownKind is used for errors that are created without a distinct `Kind`.
+	UnknownKind Kind = ""
+	// UnknownError is an error message that is returned when an error has no
+	// message and is of `UnknownKind`
+	UnknownError string = "unknown error"
+)
 
-// Kind describes the kind/type of error that has occurred, such as "auth error", "unmarshal error", etc.
+// New creates a new error.
+func New(kind Kind, msg string) error {
+	err := &err{MakeInner(nil, kind, msg)}
+	err.frames.Capture(1)
+	return err
+}
+
+// Newf formats an error message according to a format specifier and provided
+// arguments and creates a new error the same way `New()` does.
+func Newf(kind Kind, format string, a ...interface{}) error {
+	err := &err{MakeInner(nil, kind, fmt.Sprintf(format, a...))}
+	err.frames.Capture(1)
+	return err
+}
+
+// Wrap creates a new error that wraps around the causing error, thus extending
+// the error chain. In contrast to `New()`, it will only create a new error
+// when the cause error is not `nil`.
+func Wrap(cause error, kind Kind, msg string) error {
+	if cause == nil {
+		return nil
+	}
+
+	err := &err{MakeInner(cause, kind, msg)}
+	err.frames.Capture(1)
+	return err
+}
+
+// Wrapf formats an error message according to a format specifier and provided
+// arguments and creates a new error the same way `Wrap()` does.
+func Wrapf(cause error, kind Kind, format string, a ...interface{}) error {
+	if cause == nil {
+		return nil
+	}
+
+	err := &err{MakeInner(cause, kind, fmt.Sprintf(format, a...))}
+	err.frames.Capture(1)
+	return err
+}
+
+type err struct{ Inner }
+
+func (e err) Format(s fmt.State, v rune) { FormatError(e, s, v) }
+
+// Error returns the message of the error with its `Kind` as prefix. If `Kind`
+// is of `UnknownKind` the prefix is omitted. If message is empty, the string
+// value of the kind is returned. When both kind and message are empty
+// "unknown error" will be returned.
+func (e err) Error() string {
+	if e.kind == "" && e.msg == "" {
+		return UnknownError
+	}
+	if e.kind == "" {
+		return e.msg
+	}
+	if e.msg == "" {
+		return e.kind.String()
+	}
+
+	return e.kind.String() + ": " + e.msg
+}
+
+// Inner is by itself not an error and is designed to be embedded in (custom)
+// errors.
+type Inner struct {
+	frames *Frames // slice of stack trace frames
+	cause  error   // cause of this error, if any
+	kind   Kind    // specific kind of error
+	msg    string  // message of error that occurred
+}
+
+func MakeInner(cause error, kind Kind, msg ...string) Inner {
+	return Inner{
+		frames: new(Frames),
+		cause:  cause,
+		kind:   kind,
+		msg:    strings.Join(msg, " "),
+	}
+}
+
+// Frames returns a slice of captured `xerrors.Frame` types linked to this error.
+func (e Inner) Frames() *Frames { return e.frames }
+
+// Unwrap returns the next error in the error chain. It returns `nil` if there
+// is no next error.
+func (e Inner) Unwrap() error { return e.cause }
+
+// Kind returns the `Kind` of the error. It returns `UnknownKind` when no `Kind`
+// is set.
+func (e Inner) Kind() Kind { return e.kind }
+
+// Kind describes the kind/type of error that has occurred. For example "auth
+// error", "unmarshal error", etc. This way errors can be of the same `Kind`
+// but still contain different error messages or additional fields.
+// It is recommended to define each `Kind` as a constant.
 type Kind string
 
-func (k Kind) String() string {
-	return string(k)
-}
-
-// err is a general error message with kind and stack trace information.
-type err struct {
-	st   *ST   // stack trace of functions that returned the error
-	err  error // cause of this error, if any
-	kind Kind
-	msg  string // message of error that occurred
-}
-
-func (err err) StackTrace() *ST { return err.st }
-func (err err) Unwrap() error   { return err.err }
-func (err err) Kind() Kind      { return err.kind }
-func (err err) Message() string { return err.msg }
-func (err err) Error() string   { return Print(err) }
-
-// wrapErr is a wrapper for "primitive" errors that do not have stack trace information. It does
-// not contain an error message by itself and always displays the message of the underlying
-// wrapped error.
-type wrapErr struct {
-	st  *ST   // stack trace of functions that returned the error
-	err error // "primitive" error which contains the real error message
-}
-
-func (err wrapErr) StackTrace() *ST { return err.st }
-func (err wrapErr) Unwrap() error   { return err.err }
-func (err wrapErr) Message() string { return err.err.Error() }
-func (err wrapErr) Error() string   { return Print(err) }
-
-// Err creates an error from a message.
-func Err(kind Kind, msg string) *err {
-	var err err
-	return prepError(&err, nil, kind, msg)
-}
-
-// Errf creates an error according to a format specifier.
-func Errf(kind Kind, msg string, args ...interface{}) *err {
-	var err err
-	return prepError(&err, nil, kind, fmt.Sprintf(msg, args...))
-}
-
-// Wrap wraps an existing error with a new error containing the provided message.
-func Wrapf(cause error, kind Kind, msg string, args ...interface{}) error {
-	if cause == nil {
-		return nil
-	}
-
-	var err err
-	return prepError(&err, cause, kind, fmt.Sprintf(msg, args...))
-}
-
-// Wrap wraps an existing error with information about the stack frame its called with. Errors that
-// implement the ErrorWithStackTrace interface add the frame to the existing stack trace. Other
-// "simple" errors are wrapped with a WrapError struct.
-func Wrap(cause error) error {
-	if cause == nil {
-		return nil
-	}
-
-	if err, ok := cause.(ErrorWithStackTrace); ok {
-		err.StackTrace().Capture(1)
-		return cause
-	}
-
-	var err wrapErr
-	return prepWrapError(&err, cause)
-}
-
-func prepError(err *err, cause error, kind Kind, msg string) *err {
-	err.st = NewStackTrace()
-	err.st.Capture(2)
-
-	err.err = cause
-	err.kind = kind
-	err.msg = msg
-
-	return err
-}
-
-func prepWrapError(err *wrapErr, cause error) *wrapErr {
-	err.st = NewStackTrace()
-	err.st.Capture(2)
-	err.err = cause
-
-	return err
-}
+// String returns the string representation of `Kind`.
+func (k Kind) String() string { return string(k) }

@@ -1,156 +1,94 @@
 package errs
 
 import (
-	"errors"
-	"reflect"
+	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/roeldev/go-fail"
+	"golang.org/x/xerrors"
 )
 
-const kindFixture Kind = "foo bar baz"
+var testErrCmpOpts cmp.Options
 
-type errWithKindFixture struct{}
-
-func (err errWithKindFixture) Kind() Kind    { return kindFixture }
-func (err errWithKindFixture) Error() string { return "" }
-
-func TestKind_String(t *testing.T) {
-	want := "foo"
-	have := Kind(want).String()
-	if have != want {
-		t.Error(fail.Diff{
-			Func: "Kind.String",
-			Msg:  "should return the string representation of the Kind",
-			Have: have,
-			Want: want,
-		})
+func init() {
+	testErrCmpOpts = cmp.Options{
+		cmp.AllowUnexported(err{}, Inner{}, xerrors.Frame{}),
 	}
 }
 
-func TestCreation(t *testing.T) {
-	tests := map[string]struct {
-		fnName    string
-		err       error
-		wantCause error
-		wantKind  Kind
-		wantMsg   string
+func TestErr_Error(t *testing.T) {
+	cause := xerrors.New("cause of error")
+	tests := map[string]map[string]struct {
+		err1 error
+		err2 error
+		want string
 	}{
-		"Err": {
-			err:       Err("foo error", "bar message"),
-			wantCause: nil,
-			wantKind:  Kind("foo error"),
-			wantMsg:   "bar message",
+		"New/Newf": {
+			"empty": {
+				err1: New("", ""),
+				err2: Newf("", ""),
+				want: UnknownError,
+			},
+			"kind only": {
+				err1: New("foo", ""),
+				err2: Newf("foo", ""),
+				want: "foo",
+			},
+			"message only": {
+				err1: New(UnknownKind, "some `foo` happened"),
+				err2: Newf(UnknownKind, "some `%s` happened", "foo"),
+				want: "some `foo` happened",
+			},
+			"kind and message": {
+				err1: New("foo error", "unexpected `bar`"),
+				err2: Newf("foo error", "unexpected `%s`", "bar"),
+				want: "foo error: unexpected `bar`",
+			},
 		},
-		"Errf": {
-			err:       Errf("another error", "so %s, much %s", "err", "problems"),
-			wantCause: nil,
-			wantKind:  Kind("another error"),
-			wantMsg:   "so err, much problems",
-		},
-		"Wrapf": {
-			err:       Wrapf(errors.New("underlying err"), "qux error", "caused by"),
-			wantCause: errors.New("underlying err"),
-			wantKind:  Kind("qux error"),
-			wantMsg:   "caused by",
-		},
-		"Wrapf nil": {
-			fnName:    "Wrapf",
-			err:       Wrapf(nil, "ignore me", "no err so no msg"),
-			wantCause: nil,
-		},
-		"Wrap": {
-			err:       Wrap(errors.New("cause")),
-			wantCause: errors.New("cause"),
-			wantKind:  Unknown,
-			wantMsg:   "cause",
-		},
-		"Wrap nil": {
-			fnName:    "Wrap",
-			err:       Wrap(nil),
-			wantCause: nil,
-		},
-		"Wrap error with kind": {
-			fnName:    "Wrap",
-			err:       Wrap(errWithKindFixture{}),
-			wantCause: errWithKindFixture{},
-			wantKind:  kindFixture,
+		"Wrap/Wrapf": {
+			"empty": {
+				err1: Wrap(cause, "", ""),
+				err2: Wrapf(cause, "", ""),
+				want: UnknownError,
+			},
+			"kind only": {
+				err1: Wrap(cause, "foo", ""),
+				err2: Wrapf(cause, "foo", ""),
+				want: "foo",
+			},
+			"message only": {
+				err1: Wrap(cause, UnknownKind, "some `foo` happened"),
+				err2: Wrapf(cause, UnknownKind, "some `%s` happened", "foo"),
+				want: "some `foo` happened",
+			},
+			"kind and message": {
+				err1: Wrap(cause, "foo error", "unexpected `bar`"),
+				err2: Wrapf(cause, "foo error", "unexpected `%s`", "bar"),
+				want: "foo error: unexpected `bar`",
+			},
 		},
 	}
 
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			if tc.fnName == "" {
-				tc.fnName = name
-			}
-
-			if err, ok := tc.err.(ErrorWithStackTrace); ok {
-				st := err.StackTrace()
-				if st == nil || st.Len() == 0 {
-					t.Error(fail.Msg{
-						Func: tc.fnName,
-						Msg:  "should create an error with a stack trace",
-					})
-				}
-			}
-
-			if err, ok := tc.err.(ErrorWithUnwrap); ok {
-				have := err.Unwrap()
-				if !reflect.DeepEqual(have, tc.wantCause) {
+	for fn, ts := range tests {
+		fn = strings.Replace(fn, "/", "&", 1)
+		for name, tc := range ts {
+			t.Run(fn+"__"+name, func(t *testing.T) {
+				if have := tc.err1.Error(); have != tc.want {
 					t.Error(fail.Diff{
-						Func: tc.fnName,
-						Msg:  "should create an error with given cause error",
+						Func: fn,
 						Have: have,
-						Want: tc.wantCause,
+						Want: tc.want,
 					})
 				}
-			}
-
-			if err, ok := tc.err.(ErrorWithKind); ok {
-				have := err.Kind()
-				if have != tc.wantKind {
+				if have := tc.err2.Error(); have != tc.want {
 					t.Error(fail.Diff{
-						Func: tc.fnName,
-						Msg:  "should create an error with given kind",
+						Func: fn,
 						Have: have,
-						Want: tc.wantKind,
+						Want: tc.want,
 					})
 				}
-			}
-
-			if err, ok := tc.err.(ErrorWithMessage); ok {
-				have := err.Message()
-				if have != tc.wantMsg {
-					t.Error(fail.Diff{
-						Func: tc.fnName,
-						Msg:  "should create an error with given message",
-						Have: have,
-						Want: tc.wantMsg,
-					})
-				}
-			}
-		})
-	}
-}
-
-func TestErrorPrint(t *testing.T) {
-	tests := map[string]error{
-		"err":     Err("foo", "bar baz"),
-		"wrapErr": Wrap(errors.New("foo: bar")),
-	}
-
-	for name, err := range tests {
-		t.Run(name, func(t *testing.T) {
-			have := err.Error()
-			want := Print(err)
-			if have != want {
-				t.Error(fail.Diff{
-					Func: name + ".Error",
-					Msg:  "should use the Print() util function to create the error message",
-					Have: have,
-					Want: want,
-				})
-			}
-		})
+			})
+		}
 	}
 }
