@@ -8,26 +8,31 @@ import (
 	"github.com/roeldev/go-errs"
 )
 
+const SomeError errs.Kind = "some error"
+
 func unmarshal() (struct{}, error) {
 	dest := struct{}{}
 	err := json.Unmarshal([]byte("invalid"), &dest) // this wil result in an error
-	return dest, err
+	return dest, errs.Trace(err)
 }
 
-func run() error {
+func someAction() error {
 	data, err := unmarshal()
 	if err != nil {
-		return errs.Wrap(err)
+		return errs.Wrapf(err, SomeError, "something bad happened while performing %s", "someAction")
 	}
 
+	// this code never runs
 	fmt.Println(data)
 	return nil
 }
 
 func main() {
-	err := run()
+	err := someAction()
 	if err != nil {
-		fmt.Print(err)
+		fmt.Printf("%v\n", err)
+		fmt.Println("//////////")
+		fmt.Printf("%+v\n", err)
 		os.Exit(1)
 	}
 }

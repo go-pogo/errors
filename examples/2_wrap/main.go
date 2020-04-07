@@ -6,20 +6,22 @@ import (
 	"github.com/roeldev/go-errs"
 )
 
+const SomeError errs.Kind = "some error"
+
 func someAction() error {
-	return errs.New("some error", "something happened")
+	return errs.New(SomeError, "something happened")
 }
 
 func doSomething() error {
 	err := someAction()
-	return errs.Wrap(err)
+	return errs.Trace(err)
 }
 
 func main() {
 	err := doSomething()
 	if err != nil {
-		errs.GetStackTrace(err).Capture(0)
-		// err = errs.Wrap(err)
-		fmt.Print(err)
+		fmt.Printf("%v\n", err)
+		fmt.Println("//////////")
+		fmt.Printf("%+v\n", err)
 	}
 }

@@ -1,44 +1,63 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/roeldev/go-errs"
 )
 
+const SomeError errs.Kind = "some error"
+
 //
 // define custom error
 //
-type CustomError struct {
+type CustomErr struct {
 	errs.Inner
 	Value string
 }
 
-func (ce CustomError) Message() string {
-	return ce.Inner.Message() + ": " + ce.Value
+func (ce CustomErr) Error() string {
+	return fmt.Sprintf("just a custom error message `%s`", ce.Value)
 }
 
-func (ce CustomError) Error() string { return errs.Print(ce) }
+func (ce CustomErr) Format(s fmt.State, v rune) { errs.FormatError(ce, s, v) }
 
-func newCustomErr(msg string) *CustomError {
-	return &CustomError{Inner: errs.MakeInnerWith(msg)}
+func customErr(cause error) *CustomErr {
+	err := &CustomErr{Inner: errs.MakeInner(cause, SomeError)}
+	err.Frames().Capture(1)
+	return err
 }
 
 //
 // actual "program"
 //
-func doSomething() error {
-	err := newCustomErr("something is wrong")
-	err.Value = "some important value"
+func unmarshal() (struct{}, error) {
+	dest := struct{}{}
+	err := json.Unmarshal([]byte("invalid"), &dest) // this wil result in an error
+	return dest, errs.Trace(err)
+}
 
-	return err
+func someAction() error {
+	data, err := unmarshal()
+	if err != nil {
+		err := customErr(err)
+		err.Value = "some important value"
+		return err
+	}
+
+	// this code never runs
+	fmt.Println(data)
+	return nil
 }
 
 func main() {
-	err := doSomething()
+	err := someAction()
 	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println("All is well")
+		fmt.Printf("%v\n", err)
+		fmt.Println("//////////")
+		fmt.Printf("%+v\n", err)
+		os.Exit(1)
 	}
 }
