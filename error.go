@@ -102,13 +102,4 @@ func (e Inner) Unwrap() error { return e.cause }
 
 // Kind returns the `Kind` of the error. It returns `UnknownKind` when no `Kind`
 // is set.
-func (e Inner) Kind() Kind { return e.kind }
-
-// Kind describes the kind/type of error that has occurred. For example "auth
-// error", "unmarshal error", etc. This way errors can be of the same `Kind`
-// but still contain different error messages or additional fields.
-// It is recommended to define each `Kind` as a constant.
-type Kind string
-
-// String returns the string representation of `Kind`.
-func (k Kind) String() string { return string(k) }
+func (e *Inner) Kind() Kind { return e.kind }
