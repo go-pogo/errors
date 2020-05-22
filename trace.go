@@ -41,8 +41,8 @@ type traceErr struct {
 	frames *Frames
 }
 
-func (t traceErr) Frames() *Frames { return t.frames }
+func (t *traceErr) Frames() *Frames { return t.frames }
 
-func (t traceErr) Unwrap() error { return errors.Unwrap(t.error) }
+func (t *traceErr) Unwrap() error { return errors.Unwrap(t.error) }
 
-func (t traceErr) Format(s fmt.State, v rune) { FormatError(t, s, v) }
+func (t *traceErr) Format(s fmt.State, v rune) { FormatError(t, s, v) }

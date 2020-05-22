@@ -5,13 +5,9 @@ import (
 	"strings"
 )
 
-const (
-	// UnknownKind is used for errors that are created without a distinct `Kind`.
-	UnknownKind Kind = ""
-	// UnknownError is an error message that is returned when an error has no
-	// message and is of `UnknownKind`
-	UnknownError string = "unknown error"
-)
+// UnknownError is an error message that is returned when an error has no
+// message and is of `UnknownKind`
+const UnknownError string = "unknown error"
 
 // New creates a new error.
 func New(kind Kind, msg string) error {
@@ -55,13 +51,13 @@ func Wrapf(cause error, kind Kind, format string, a ...interface{}) error {
 
 type err struct{ Inner }
 
-func (e err) Format(s fmt.State, v rune) { FormatError(e, s, v) }
+func (e *err) Format(s fmt.State, v rune) { FormatError(e, s, v) }
 
 // Error returns the message of the error with its `Kind` as prefix. If `Kind`
 // is of `UnknownKind` the prefix is omitted. If message is empty, the string
 // value of the kind is returned. When both kind and message are empty
 // "unknown error" will be returned.
-func (e err) Error() string {
+func (e *err) Error() string {
 	if e.kind == "" && e.msg == "" {
 		return UnknownError
 	}
@@ -94,11 +90,11 @@ func MakeInner(cause error, kind Kind, msg ...string) Inner {
 }
 
 // Frames returns a slice of captured `xerrors.Frame` types linked to this error.
-func (e Inner) Frames() *Frames { return e.frames }
+func (e *Inner) Frames() *Frames { return e.frames }
 
 // Unwrap returns the next error in the error chain. It returns `nil` if there
 // is no next error.
-func (e Inner) Unwrap() error { return e.cause }
+func (e *Inner) Unwrap() error { return e.cause }
 
 // Kind returns the `Kind` of the error. It returns `UnknownKind` when no `Kind`
 // is set.
