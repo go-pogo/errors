@@ -92,3 +92,22 @@ func TestErr_Error(t *testing.T) {
 		}
 	}
 }
+
+func TestNilWrap(t *testing.T) {
+	tests := map[string]error{
+		"Wrap":  Wrap(nil, UnknownKind, "foobar"),
+		"Wrapf": Wrapf(nil, UnknownKind, "%s", "foobar"),
+	}
+
+	for name, have := range tests {
+		t.Run(name, func(t *testing.T) {
+			if have != nil {
+				t.Error(fail.Diff{
+					Func: name,
+					Have: have,
+					Want: nil,
+				})
+			}
+		})
+	}
+}
