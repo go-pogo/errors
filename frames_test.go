@@ -8,7 +8,7 @@ import (
 
 func TestCaptureFrames(t *testing.T) {
 	tests := map[string]struct {
-		n int
+		n uint
 	}{
 		"n=0": {n: 0},
 		"n=1": {n: 1},
@@ -18,11 +18,12 @@ func TestCaptureFrames(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			frames := CaptureFrames(tc.n, 1)
-			if len(frames) != tc.n {
+
+			if l := frames.Len(); l != tc.n {
 				t.Error(fail.Diff{
 					Func: "CaptureFrames",
 					Msg:  "should capture n frames",
-					Have: len(frames),
+					Have: l,
 					Want: tc.n,
 				})
 			}
