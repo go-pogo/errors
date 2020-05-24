@@ -26,10 +26,9 @@ func TraceSkip(err error, skip uint) error {
 		return err
 	}
 
-	frames := CaptureFrames(1, skip+2)
 	return &traceErr{
 		error:  err,
-		frames: &frames,
+		frames: CaptureFrames(1, skip+2),
 	}
 }
 
@@ -38,10 +37,10 @@ func TraceSkip(err error, skip uint) error {
 // displays the message of the underlying wrapped error.
 type traceErr struct {
 	error
-	frames *Frames
+	frames Frames
 }
 
-func (t *traceErr) Frames() *Frames { return t.frames }
+func (t *traceErr) Frames() *Frames { return &t.frames }
 
 func (t *traceErr) Unwrap() error { return errors.Unwrap(t.error) }
 

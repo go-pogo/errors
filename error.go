@@ -74,15 +74,15 @@ func (e *err) Error() string {
 // Inner is by itself not an error and is designed to be embedded in (custom)
 // errors.
 type Inner struct {
-	frames *Frames // slice of stack trace frames
-	cause  error   // cause of this error, if any
-	kind   Kind    // specific kind of error
-	msg    string  // message of error that occurred
+	frames Frames // slice of stack trace frames
+	cause  error  // cause of this error, if any
+	kind   Kind   // specific kind of error
+	msg    string // message of error that occurred
 }
 
 func MakeInner(cause error, kind Kind, msg ...string) Inner {
 	return Inner{
-		frames: new(Frames),
+		frames: make(Frames, 0, defaultFramesCapacity),
 		cause:  cause,
 		kind:   kind,
 		msg:    strings.Join(msg, " "),
@@ -90,7 +90,7 @@ func MakeInner(cause error, kind Kind, msg ...string) Inner {
 }
 
 // Frames returns a slice of captured `xerrors.Frame` types linked to this error.
-func (e *Inner) Frames() *Frames { return e.frames }
+func (e *Inner) Frames() *Frames { return &e.frames }
 
 // Unwrap returns the next error in the error chain. It returns `nil` if there
 // is no next error.

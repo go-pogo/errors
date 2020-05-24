@@ -59,7 +59,7 @@ func TestUnwrapAll(t *testing.T) {
 			wantFn: func(e error) []error {
 				return []error{
 					&err{Inner{
-						frames: GetFrames(e),
+						frames: *GetFrames(e),
 						kind:   "kind",
 						msg:    "err msg",
 					}},
@@ -71,7 +71,7 @@ func TestUnwrapAll(t *testing.T) {
 			wantFn: func(e error) []error {
 				return []error{
 					&err{Inner{
-						frames: GetFrames(e),
+						frames: *GetFrames(e),
 						kind:   "kind",
 						msg:    "err msg",
 					}},
@@ -83,7 +83,7 @@ func TestUnwrapAll(t *testing.T) {
 			wantFn: func(e error) []error {
 				return []error{
 					&err{Inner{
-						frames: GetFrames(e),
+						frames: *GetFrames(e),
 						kind:   "kind",
 						msg:    "err msg",
 					}},
@@ -95,7 +95,7 @@ func TestUnwrapAll(t *testing.T) {
 			wantFn: func(e error) []error {
 				cause := &err{
 					Inner: Inner{
-						frames: GetFrames(errors.Unwrap(e)),
+						frames: *GetFrames(errors.Unwrap(e)),
 						kind:   "baz",
 						msg:    "qux",
 					},
@@ -103,7 +103,7 @@ func TestUnwrapAll(t *testing.T) {
 
 				return []error{
 					&err{Inner{
-						frames: GetFrames(e),
+						frames: *GetFrames(e),
 						cause:  cause,
 						kind:   "foo kind",
 						msg:    "bar msg",
@@ -168,7 +168,7 @@ func TestUnwrapCause(t *testing.T) {
 			wantFn: func(e error) error {
 				return &err{
 					Inner: Inner{
-						frames: GetFrames(e),
+						frames: *GetFrames(e),
 						kind:   "qux",
 						msg:    "xoo",
 					},
@@ -179,7 +179,7 @@ func TestUnwrapCause(t *testing.T) {
 			err: Trace(New("qux", "xoo")),
 			wantFn: func(e error) error {
 				return &err{Inner{
-					frames: GetFrames(e),
+					frames: *GetFrames(e),
 					kind:   "qux",
 					msg:    "xoo",
 				}}
@@ -189,7 +189,7 @@ func TestUnwrapCause(t *testing.T) {
 			err: Trace(Trace(New("qux", "xoo"))),
 			wantFn: func(e error) error {
 				return &err{Inner{
-					frames: GetFrames(e),
+					frames: *GetFrames(e),
 					kind:   "qux",
 					msg:    "xoo",
 				}}
