@@ -18,7 +18,7 @@ func Filter(errors []error) []error {
 	return res
 }
 
-func Multi(errors ...error) error {
+func Combine(errors ...error) error {
 	if len(errors) == 1 {
 		return TraceSkip(errors[0], 1)
 	}
