@@ -8,15 +8,20 @@ import (
 )
 
 // FormatError prints the error using `xerrors.FormatError()` and a formatter
-// that implements the `xerrors.Formatter` interface. See the
-// `golang.org/x/xerrors` package for additional information.
+// that implements the `xerrors.Formatter` interface.
+// See the `golang.org/x/xerrors` package for additional information.
 func FormatError(err error, s fmt.State, v rune) {
-	xerrors.FormatError(formatter{err}, s, v)
+	f, ok := err.(xerrors.Formatter)
+	if !ok {
+		f = errorFormatter{err}
+	}
+
+	xerrors.FormatError(f, s, v)
 }
 
-type formatter struct{ error }
+type errorFormatter struct{ error }
 
-func (f formatter) FormatError(p xerrors.Printer) error {
+func (f errorFormatter) FormatError(p xerrors.Printer) error {
 	p.Print(f.error.Error())
 	if p.Detail() {
 		frames := GetFrames(f.error)
