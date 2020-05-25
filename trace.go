@@ -1,7 +1,6 @@
 package errs
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -42,6 +41,6 @@ type traceErr struct {
 
 func (t *traceErr) Frames() *Frames { return &t.frames }
 
-func (t *traceErr) Unwrap() error { return errors.Unwrap(t.error) }
+func (t *traceErr) Unwrap() error { return t.error }
 
 func (t *traceErr) Format(s fmt.State, v rune) { FormatError(t, s, v) }
