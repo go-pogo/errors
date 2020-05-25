@@ -3,212 +3,129 @@ package errs
 import (
 	"errors"
 	"fmt"
-	"reflect"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/roeldev/go-fail"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestUnwrapAll(t *testing.T) {
-	tests := map[string]struct {
-		err    error
-		wantFn func(e error) []error
-	}{
-		"nil": {
-			err: Trace(nil),
-			wantFn: func(e error) []error {
-				return nil
-			},
-		},
-		"primitive error": {
-			err: errors.New("foo bar"),
-			wantFn: func(e error) []error {
-				return []error{errors.New("foo bar")}
-			},
-		},
-		"wrapped primitive": {
-			err: Trace(errors.New("bar: baz")),
-			wantFn: func(e error) []error {
-				return []error{e}
-			},
-		},
-		"double wrapped primitive": {
-			err: Trace(Trace(errors.New("qux: xoo"))),
-			wantFn: func(e error) []error {
-				return []error{e}
-			},
-		},
-		"primitive wrap": {
-			err: fmt.Errorf("cause: %w", errors.New("foo bar")),
-			wantFn: func(e error) []error {
-				return []error{e, errors.New("foo bar")}
-			},
-		},
-		// "wrapped primitive wrap": {
-		// 	err: Trace(fmt.Errorf("cause: %w", errors.New("foo bar"))),
-		// 	wantFn: func(e error) []error {
-		// 		return []error{
-		// 			errors.Unwrap(e),
-		// 			errors.New("foo bar"),
-		// 		}
-		// 	},
-		// },
-		"error": {
-			err: New("kind", "err msg"),
-			wantFn: func(e error) []error {
-				return []error{
-					&err{Inner{
-						frames: *GetFrames(e),
-						kind:   "kind",
-						msg:    "err msg",
-					}},
-				}
-			},
-		},
-		"wrapped error": {
-			err: Trace(New("kind", "err msg")),
-			wantFn: func(e error) []error {
-				return []error{
-					&err{Inner{
-						frames: *GetFrames(e),
-						kind:   "kind",
-						msg:    "err msg",
-					}},
-				}
-			},
-		},
-		"double wrapped error": {
-			err: Trace(Trace(New("kind", "err msg"))),
-			wantFn: func(e error) []error {
-				return []error{
-					&err{Inner{
-						frames: *GetFrames(e),
-						kind:   "kind",
-						msg:    "err msg",
-					}},
-				}
-			},
-		},
-		"wrapped error error": {
-			err: Wrap(New("baz", "qux"), "foo kind", "bar msg"),
-			wantFn: func(e error) []error {
-				cause := &err{
-					Inner: Inner{
-						frames: *GetFrames(errors.Unwrap(e)),
-						kind:   "baz",
-						msg:    "qux",
-					},
-				}
+type unwrapAllHelper []error
 
-				return []error{
-					&err{Inner{
-						frames: *GetFrames(e),
-						cause:  cause,
-						kind:   "foo kind",
-						msg:    "bar msg",
-					}},
-					cause,
-				}
-			},
+func (h *unwrapAllHelper) add(err error) error {
+	x := append(*h, err)
+	if len(x) > 1 {
+		copy(x[1:], x)
+		x[0] = err
+	}
+	*h = x
+	return err
+}
+
+func TestUnwrapAll(t *testing.T) {
+	tests := map[string]func(want *unwrapAllHelper) error{
+		"nil": func(want *unwrapAllHelper) error {
+			return Trace(nil)
+		},
+		"primitive error": func(want *unwrapAllHelper) error {
+			return errors.New("foo bar")
+		},
+		"traced primitive": func(want *unwrapAllHelper) error {
+			err := want.add(errors.New("bar: baz"))
+			return Trace(err)
+		},
+		"double traced primitive": func(want *unwrapAllHelper) error {
+			err := want.add(errors.New("qux: xoo"))
+			return Trace(Trace(err))
+		},
+		"primitive wrap": func(want *unwrapAllHelper) error {
+			err := want.add(errors.New("foo bar"))
+			return fmt.Errorf("cause: %w", err)
+		},
+		"traced primitive wrap": func(want *unwrapAllHelper) error {
+			err := want.add(errors.New("foo bar"))
+			err = want.add(fmt.Errorf("cause: %w", err))
+			return Trace(err)
+		},
+		"error": func(want *unwrapAllHelper) error {
+			return New("kind", "err msg")
+		},
+		"traced error": func(want *unwrapAllHelper) error {
+			return Trace(New("kind", "err msg"))
+		},
+		"double traced error": func(want *unwrapAllHelper) error {
+			return Trace(Trace(New("kind", "err msg")))
+		},
+		"wrapped error error": func(want *unwrapAllHelper) error {
+			err := want.add(New("baz", "qux"))
+			return Wrap(err, "foo kind", "bar msg")
 		},
 	}
 
-	for label, tc := range tests {
+	for label, setup := range tests {
 		t.Run(label, func(t *testing.T) {
-			have := UnwrapAll(tc.err)
-			want := tc.wantFn(tc.err)
-
-			if !reflect.DeepEqual(have, want) {
-				t.Error(fail.Diff{
-					Func: "UnwrapAll",
-					Msg:  "should unwrap all and return a slice of errors",
-					Have: have,
-					Want: want,
-					Opts: cmp.Options{
-						cmp.AllowUnexported(traceErr{}),
-					},
-				})
+			var h unwrapAllHelper
+			err := setup(&h)
+			if err != nil {
+				_ = h.add(err)
 			}
+
+			assert.Exactly(t, []error(h), UnwrapAll(err))
 		})
 	}
 }
 
 func TestUnwrapCause(t *testing.T) {
 	tests := map[string]struct {
-		err    error
-		wantFn func(e error) error
+		want  error
+		setup func(e error) error
 	}{
 		"primitive error": {
-			err: errors.New("foo bar"),
-			wantFn: func(e error) error {
-				return errors.New("foo bar")
-			},
-		},
-		"wrapped primitive error": {
-			err: Trace(errors.New("foo bar")),
-			wantFn: func(e error) error {
+			want: errors.New("foo bar"),
+			setup: func(e error) error {
 				return e
 			},
 		},
-		"primitive wrap": {
-			err: fmt.Errorf("%w", errors.New("foo bar")),
-			wantFn: func(e error) error {
-				return errors.New("foo bar")
+		"traced primitive error": {
+			want: errors.New("foo bar"),
+			setup: func(e error) error {
+				return Trace(e)
 			},
 		},
-		"wrapped primitive wrap": {
-			err: Trace(fmt.Errorf("cause: %w", errors.New("baz"))),
-			wantFn: func(e error) error {
-				return errors.New("baz")
+		"primitive wrap": {
+			want: errors.New("foo bar"),
+			setup: func(e error) error {
+				return fmt.Errorf("%w", e)
+			},
+		},
+		"traced primitive wrap": {
+			want: errors.New("baz"),
+			setup: func(e error) error {
+				return Trace(fmt.Errorf("cause: %w", e))
 			},
 		},
 		"error": {
-			err: New("qux", "xoo"),
-			wantFn: func(e error) error {
-				return &err{
-					Inner: Inner{
-						frames: *GetFrames(e),
-						kind:   "qux",
-						msg:    "xoo",
-					},
-				}
+			want: New("qux", "xoo"),
+			setup: func(e error) error {
+				return e
 			},
 		},
-		"wrapped error": {
-			err: Trace(New("qux", "xoo")),
-			wantFn: func(e error) error {
-				return &err{Inner{
-					frames: *GetFrames(e),
-					kind:   "qux",
-					msg:    "xoo",
-				}}
+		"traced error": {
+			want: New("qux", "xoo"),
+			setup: func(e error) error {
+				return Trace(e)
 			},
 		},
-		"double wrapped error": {
-			err: Trace(Trace(New("qux", "xoo"))),
-			wantFn: func(e error) error {
-				return &err{Inner{
-					frames: *GetFrames(e),
-					kind:   "qux",
-					msg:    "xoo",
-				}}
+		"double traced error": {
+			want: New("qux", "xoo"),
+			setup: func(e error) error {
+				return Trace(Trace(e))
 			},
 		},
 	}
 
 	for label, tc := range tests {
 		t.Run(label, func(t *testing.T) {
-			have := UnwrapCause(tc.err)
-			want := tc.wantFn(tc.err)
-
-			if !reflect.DeepEqual(have, want) {
-				t.Error(fail.Diff{
-					Func: "UnwrapCause",
-					Have: have,
-					Want: want,
-				})
-			}
+			have := UnwrapCause(tc.setup(tc.want))
+			assert.Same(t, tc.want, have)
 		})
 	}
 }

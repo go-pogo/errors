@@ -4,18 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/roeldev/go-fail"
+	"github.com/stretchr/testify/assert"
 	"golang.org/x/xerrors"
 )
-
-var testErrCmpOpts cmp.Options
-
-func init() {
-	testErrCmpOpts = cmp.Options{
-		cmp.AllowUnexported(err{}, Inner{}, xerrors.Frame{}),
-	}
-}
 
 func TestErr_Error(t *testing.T) {
 	cause := xerrors.New("cause of error")
@@ -74,20 +65,8 @@ func TestErr_Error(t *testing.T) {
 		fn = strings.Replace(fn, "/", "&", 1)
 		for name, tc := range ts {
 			t.Run(fn+"__"+name, func(t *testing.T) {
-				if have := tc.err1.Error(); have != tc.want {
-					t.Error(fail.Diff{
-						Func: fn,
-						Have: have,
-						Want: tc.want,
-					})
-				}
-				if have := tc.err2.Error(); have != tc.want {
-					t.Error(fail.Diff{
-						Func: fn,
-						Have: have,
-						Want: tc.want,
-					})
-				}
+				assert.Equal(t, tc.want, tc.err1.Error())
+				assert.Equal(t, tc.want, tc.err2.Error())
 			})
 		}
 	}
@@ -101,13 +80,7 @@ func TestNilWrap(t *testing.T) {
 
 	for name, have := range tests {
 		t.Run(name, func(t *testing.T) {
-			if have != nil {
-				t.Error(fail.Diff{
-					Func: name,
-					Have: have,
-					Want: nil,
-				})
-			}
+			assert.Nil(t, have)
 		})
 	}
 }

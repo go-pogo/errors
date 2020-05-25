@@ -1,10 +1,9 @@
 package errs
 
 import (
-	"strings"
 	"testing"
 
-	"github.com/roeldev/go-fail"
+	"github.com/stretchr/testify/assert"
 )
 
 func panicOnSomething() {
@@ -13,17 +12,7 @@ func panicOnSomething() {
 
 func TestWrapPanic(t *testing.T) {
 	defer func() {
-		have := recover().(string)
-		want := "wrapped: panic!"
-
-		if have != want {
-			t.Error(fail.Diff{
-				Func: "WrapPanic",
-				Msg:  "should wrap the panic with a prefix",
-				Have: have,
-				Want: want,
-			})
-		}
+		assert.Equal(t, "wrapped: panic!", recover())
 	}()
 
 	defer WrapPanic("wrapped")
@@ -32,15 +21,7 @@ func TestWrapPanic(t *testing.T) {
 
 func TestMust_nil_error(t *testing.T) {
 	defer func() {
-		have := recover()
-		if have != nil {
-			t.Error(fail.Diff{
-				Func: "Must",
-				Msg:  "must not panic on nil error",
-				Have: have,
-				Want: nil,
-			})
-		}
+		assert.Nil(t, recover())
 	}()
 
 	var err error
@@ -48,19 +29,10 @@ func TestMust_nil_error(t *testing.T) {
 }
 
 func TestMust_panic_on_error(t *testing.T) {
+	errStr := "foo error"
 	defer func() {
-		have := recover().(string)
-		want := "errs.Must: foo error"
-
-		if !strings.HasPrefix(have, want) {
-			t.Error(fail.Diff{
-				Func: "Must",
-				Msg:  "must panic and include the causing error",
-				Have: have,
-				Want: want,
-			})
-		}
+		assert.Contains(t, recover(), errStr)
 	}()
 
-	Must(false, New(UnknownKind, "foo error"))
+	Must(false, New(UnknownKind, errStr))
 }

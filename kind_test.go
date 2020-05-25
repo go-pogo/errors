@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/roeldev/go-fail"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetKind(t *testing.T) {
@@ -32,15 +32,7 @@ func TestGetKind(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			have := GetKind(tc.err)
-			if have != tc.want {
-				t.Error(fail.Diff{
-					Func: "GetKind",
-					Msg:  "should return the Kind of the error, or UnknownKind",
-					Have: have,
-					Want: tc.want,
-				})
-			}
+			assert.Exactly(t, tc.want, GetKind(tc.err))
 		})
 	}
 }
