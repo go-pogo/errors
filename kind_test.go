@@ -12,19 +12,19 @@ func TestGetKind(t *testing.T) {
 		err  error
 		want Kind
 	}{
-		"nil": {
+		"with nil": {
 			err:  nil,
 			want: UnknownKind,
 		},
-		"primitive": {
+		"with primitive error": {
 			err:  errors.New("foo bar"),
 			want: UnknownKind,
 		},
-		"error": {
+		"with error": {
 			err:  New("foo", "bar"),
 			want: Kind("foo"),
 		},
-		"wrapped error": {
+		"with wrapped error": {
 			err:  Trace(New("baz", "qux")),
 			want: Kind("baz"),
 		},

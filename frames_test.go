@@ -26,7 +26,8 @@ func TestCaptureFrames(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			frames := testCaptureFrames3(tc.n, tc.skip+1)
-			assert.Equal(t, tc.wantLen, len(frames))
+			assert.Len(t, frames, tc.wantLen)
+			assert.Equal(t, uint(tc.wantLen), frames.Len())
 
 			i := tc.wantLen
 			if i > 3 {
@@ -39,4 +40,15 @@ func TestCaptureFrames(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetFrames(t *testing.T) {
+	t.Run("with error", func(t *testing.T) {
+		f := *GetFrames(New("", ""))
+		assert.Len(t, f, 1)
+		assert.Contains(t, f.String(), "frames_test.go:")
+	})
+	t.Run("with nil", func(t *testing.T) {
+		assert.Nil(t, GetFrames(nil))
+	})
 }

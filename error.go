@@ -51,6 +51,8 @@ func Wrapf(cause error, kind Kind, format string, a ...interface{}) error {
 
 type err struct{ Inner }
 
+// Format formats the error using the formatting functionality of the `xerrors`
+// package.
 func (e *err) Format(s fmt.State, v rune) { FormatError(e, s, v) }
 
 // Error returns the message of the error with its `Kind` as prefix. If `Kind`
