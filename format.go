@@ -30,5 +30,11 @@ func (f errorFormatter) FormatError(p xerrors.Printer) error {
 		}
 	}
 
-	return errors.Unwrap(f.error)
+	unwrap := f.error
+	if trace, ok := f.error.(*traceErr); ok {
+		// skip traceErrs, they only contain stack trace frames and not an
+		// error message of its own
+		unwrap = trace.error
+	}
+	return errors.Unwrap(unwrap)
 }

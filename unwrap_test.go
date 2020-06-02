@@ -3,6 +3,7 @@ package errs
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,7 +27,7 @@ func TestUnwrapAll(t *testing.T) {
 			return Trace(nil)
 		},
 		"primitive error": func(want *unwrapAllHelper) error {
-			return errors.New("foo bar")
+			return want.add(errors.New("foo bar"))
 		},
 		"traced primitive": func(want *unwrapAllHelper) error {
 			err := want.add(errors.New("bar: baz"))
@@ -38,7 +39,8 @@ func TestUnwrapAll(t *testing.T) {
 		},
 		"primitive wrap": func(want *unwrapAllHelper) error {
 			err := want.add(errors.New("foo bar"))
-			return fmt.Errorf("cause: %w", err)
+			err = want.add(fmt.Errorf("cause: %w", err))
+			return err
 		},
 		"traced primitive wrap": func(want *unwrapAllHelper) error {
 			err := want.add(errors.New("foo bar"))
@@ -46,17 +48,20 @@ func TestUnwrapAll(t *testing.T) {
 			return Trace(err)
 		},
 		"error": func(want *unwrapAllHelper) error {
-			return New("kind", "err msg")
+			return want.add(New("kind", "err msg"))
 		},
 		"traced error": func(want *unwrapAllHelper) error {
-			return Trace(New("kind", "err msg"))
+			err := want.add(New("kind", "err msg"))
+			return Trace(err)
 		},
 		"double traced error": func(want *unwrapAllHelper) error {
-			return Trace(Trace(New("kind", "err msg")))
+			err := want.add(New("kind", "err msg"))
+			return Trace(Trace(err))
 		},
 		"wrapped error error": func(want *unwrapAllHelper) error {
 			err := want.add(New("baz", "qux"))
-			return Wrap(err, "foo kind", "bar msg")
+			err = want.add(Wrap(err, "foo kind", "bar msg"))
+			return err
 		},
 	}
 
@@ -64,11 +69,10 @@ func TestUnwrapAll(t *testing.T) {
 		t.Run(label, func(t *testing.T) {
 			var h unwrapAllHelper
 			err := setup(&h)
-			if err != nil {
-				_ = h.add(err)
-			}
+			have := UnwrapAll(err)
 
-			assert.Exactly(t, []error(h), UnwrapAll(err))
+			assert.Equal(t, len(h), len(have))
+			assert.Exactly(t, []error(h), have)
 		})
 	}
 }

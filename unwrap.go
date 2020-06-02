@@ -19,6 +19,11 @@ func UnwrapAll(err error) []error {
 		if err == nil {
 			break
 		}
+		if t, ok := err.(*traceErr); ok {
+			// skip traceErrs, they only contain stack trace frames and not an
+			// error message of its own
+			err = t.error
+		}
 		res = append(res, err)
 		err = errors.Unwrap(err)
 	}
