@@ -35,7 +35,14 @@ func TestCombine(t *testing.T) {
 		want := Trace(err).(*traceErr)
 		want.frames = *GetFrames(have)
 
-		assert.Exactly(t, want, have)
+		assert.Exactly(t, want, have, "should add frame trace one single error")
+	})
+	t.Run("with errors", func(t *testing.T) {
+		err1 := errors.New("first error")
+		err2 := Newf(UnknownKind, "err with trace")
+		multi := Combine(err1, err2).(*multiErr)
+
+		assert.Exactly(t, []error{err1, err2}, multi.Errors())
 	})
 }
 
@@ -57,17 +64,17 @@ func TestAppend(t *testing.T) {
 	})
 	t.Run("with errors", func(t *testing.T) {
 		var have error
-		errors := []error{
+		list := []error{
 			New("nice", "err"),
 			errors.New("whoops"),
 			fmt.Errorf("another %s", "error"),
 		}
 
-		Append(&have, errors[0]) // set value to *have
-		Append(&have, errors[1]) // create multi error from errors 0 and 1
-		Append(&have, errors[2]) // append error 2 to multi error
+		Append(&have, list[0]) // set value to *have
+		Append(&have, list[1]) // create multi error from errors 0 and 1
+		Append(&have, list[2]) // append error 2 to multi error
 
 		assert.IsType(t, new(multiErr), have)
-		assert.Exactly(t, errors, (have.(*multiErr)).Errors())
+		assert.Exactly(t, list, (have.(*multiErr)).Errors())
 	})
 }
