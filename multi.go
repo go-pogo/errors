@@ -95,9 +95,11 @@ func (m *multiErr) Format(s fmt.State, v rune) { xerrors.FormatError(m, s, v) }
 func (m *multiErr) FormatError(p xerrors.Printer) error {
 	p.Print(m.Error())
 	if p.Detail() {
+		m.frames.Format(p)
+
 		l := len(m.errors)
 		for i, err := range m.errors {
-			p.Printf("\n\n[%d/%d] %+v", i+1, l, err)
+			p.Printf("\n[%d/%d] %+v\n", i+1, l, err)
 		}
 	}
 
@@ -108,12 +110,10 @@ func (m *multiErr) Error() string {
 	var buf strings.Builder
 	buf.WriteString("multiple errors occurred:")
 
-	last := len(m.errors) - 1
+	l := len(m.errors)
 	for i, e := range m.errors {
-		buf.WriteString("\n* ")
-		buf.WriteString(e.Error())
-
-		if i != last {
+		fmt.Fprintf(&buf, "\n[%d/%d] %s", i+1, l, e.Error())
+		if i < l-1 {
 			buf.WriteRune(';')
 		}
 	}

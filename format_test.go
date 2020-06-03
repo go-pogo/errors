@@ -3,9 +3,11 @@ package errs
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"golang.org/x/xerrors"
 )
 
@@ -52,4 +54,50 @@ func BenchmarkFormatError(b *testing.B) {
 			_ = fmt.Sprintf("%+v", h)
 		}
 	})
+}
+
+func TestFormatError(t *testing.T) {
+	tests := map[string]struct {
+		setup      func() error
+		traceLines []int
+	}{
+		"error": {
+			setup: func() error {
+				return New(UnknownKind, "some err")
+			},
+			traceLines: []int{66},
+		},
+		"primitive": {
+			setup: func() error {
+				return Trace(errors.New("primitive"))
+			},
+			traceLines: []int{72},
+		},
+		"traced error": {
+			setup: func() error {
+				err := New(UnknownKind, "another err")
+				return Trace(err)
+			},
+			traceLines: []int{78, 79},
+		},
+		"multi error": {
+			setup: func() error {
+				err1 := New(UnknownKind, "err1")
+				err2 := New(UnknownKind, "err2")
+				return Combine(err1, err2)
+			},
+			traceLines: []int{85, 86, 87},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			err := tc.setup()
+			str := fmt.Sprintf("%+v", err)
+
+			for _, line := range tc.traceLines {
+				assert.Contains(t, str, "format_test.go:"+strconv.Itoa(line))
+			}
+		})
+	}
 }

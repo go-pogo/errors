@@ -75,6 +75,10 @@ func TestAppend(t *testing.T) {
 		Append(&have, list[2]) // append error 2 to multi error
 
 		assert.IsType(t, new(multiErr), have)
-		assert.Exactly(t, list, (have.(*multiErr)).Errors())
+
+		multi := have.(*multiErr)
+		assert.Exactly(t, list, multi.Errors())
+		assert.Contains(t, multi.Frames().String(), "multi_test.go:74")
+		assert.Equal(t, len(multi.frames), 1)
 	})
 }
