@@ -4,39 +4,11 @@ import (
 	"errors"
 )
 
-// ErrorWithKind interfaces provide access to a `Kind`.
-type ErrorWithKind interface {
-	error
-	Kind() Kind
-}
-
-// ErrorWithFrames interfaces provide access to a stack of frames.
-type ErrorWithFrames interface {
-	error
-	Frames() *Frames
-}
-
 // ErrorWithUnwrap interfaces provide access to an underlying error further down
 // the error chain, if any.
 type ErrorWithUnwrap interface {
 	error
 	Unwrap() error
-}
-
-// GetKind returns the `Kind` of the error if it implements the `ErrorWithKind`
-// interface. If not, it returns `UnknownKind`.
-func GetKind(err error) Kind {
-	if e, ok := err.(ErrorWithKind); ok {
-		return e.Kind()
-	}
-	return UnknownKind
-}
-
-func GetFrames(err error) *Frames {
-	if e, ok := err.(ErrorWithFrames); ok {
-		return e.Frames()
-	}
-	return nil
 }
 
 // UnwrapAll returns the complete chain of errors, starting with the supplied
@@ -46,6 +18,11 @@ func UnwrapAll(err error) []error {
 	for {
 		if err == nil {
 			break
+		}
+		if t, ok := err.(*traceErr); ok {
+			// skip traceErrs, they only contain stack trace frames and not an
+			// error message of its own
+			err = t.error
 		}
 		res = append(res, err)
 		err = errors.Unwrap(err)
