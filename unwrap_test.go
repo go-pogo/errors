@@ -3,7 +3,6 @@ package errs
 import (
 	"errors"
 	"fmt"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
