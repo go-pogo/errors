@@ -2,6 +2,7 @@ package errs
 
 import (
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,13 +11,6 @@ import (
 func TestTrace(t *testing.T) {
 	t.Run("with nil", func(t *testing.T) {
 		assert.Nil(t, Trace(nil))
-	})
-	t.Run("cast to original", func(t *testing.T) {
-		err := errors.New("original err")
-		traced := Trace(err)
-
-		assert.IsType(t, new(traceErr), traced)
-		assert.True(t, errors.Is(traced, err))
 	})
 
 	tests := map[string]struct {
@@ -39,4 +33,25 @@ func TestTrace(t *testing.T) {
 			assert.Len(t, *err.Frames(), tc.wantLen)
 		})
 	}
+}
+
+func TestTraceErr_Is(t *testing.T) {
+	err := errors.New("original err")
+	traced := Trace(err).(*traceErr)
+
+	assert.True(t, traced.Is(err))
+	assert.True(t, errors.Is(traced, err))
+}
+
+func TestTraceErr_As(t *testing.T) {
+	err := new(os.PathError)
+	trace := Trace(err).(*traceErr)
+
+	var t1 *os.PathError
+	assert.True(t, trace.As(&t1))
+	assert.Exactly(t, err, t1)
+
+	var t2 *os.PathError
+	assert.True(t, errors.As(trace, &t2))
+	assert.Exactly(t, t1, t2)
 }
