@@ -1,7 +1,6 @@
 package errs
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -77,24 +76,6 @@ func Append(dest *error, err error) error {
 type multiErr struct {
 	errors []error
 	frames Frames
-}
-
-func (m *multiErr) As(target interface{}) bool {
-	for _, err := range m.errors {
-		if errors.As(err, &target) {
-			return true
-		}
-	}
-	return false
-}
-
-func (m *multiErr) Is(target error) bool {
-	for _, err := range m.errors {
-		if errors.Is(err, target) {
-			return true
-		}
-	}
-	return false
 }
 
 // Frames returns a slice of captured `xerrors.Frame` types linked to this multi
