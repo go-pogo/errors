@@ -7,27 +7,29 @@ import (
 	"golang.org/x/xerrors"
 )
 
-// Filter filters the provided errors and only returns the non-nil errors.
-func Filter(errors ...error) []error {
-	l := len(errors)
-	if l == 0 {
-		return errors
-	}
-
-	res := make([]error, 0, l)
-	for _, err := range errors {
-		if err != nil {
-			res = append(res, err)
+// Filter returns a slice of errors without nil values in between them. It
+// returns the slice with the length of the amount of non-nil errors but keeps
+// its original capacity.
+func Filter(errors []error) []error {
+	n := 0
+	for i, err := range errors {
+		if err == nil {
+			continue
 		}
+		if i != n {
+			errors[i] = nil
+			errors[n] = err
+		}
+		n++
 	}
-	return res
+	return errors[:n]
 }
 
 // Combine returns a multi error when there are more than one non-nil errors
 // provided. If only one non-nil error is provided, it will act as if
 // `TraceSkip()` is called. It returns nil when all provided errors are nil.
 func Combine(errors ...error) error {
-	errors = Filter(errors...)
+	errors = Filter(errors)
 	switch len(errors) {
 	case 0:
 		return nil
