@@ -2,7 +2,6 @@ package errs
 
 import (
 	"fmt"
-	"strings"
 )
 
 // UnknownError is an error message that is returned when an error has no
@@ -11,7 +10,7 @@ const UnknownError string = "unknown error"
 
 // New creates a new error.
 func New(kind Kind, msg string) error {
-	err := &err{MakeInner(nil, kind, msg)}
+	err := &err{MakeInner(nil, kind), msg}
 	err.frames.Capture(1)
 	return err
 }
@@ -19,7 +18,7 @@ func New(kind Kind, msg string) error {
 // Newf formats an error message according to a format specifier and provided
 // arguments and creates a new error the same way `New()` does.
 func Newf(kind Kind, format string, a ...interface{}) error {
-	err := &err{MakeInner(nil, kind, fmt.Sprintf(format, a...))}
+	err := &err{MakeInner(nil, kind), fmt.Sprintf(format, a...)}
 	err.frames.Capture(1)
 	return err
 }
@@ -32,7 +31,7 @@ func Wrap(cause error, kind Kind, msg string) error {
 		return nil
 	}
 
-	err := &err{MakeInner(cause, kind, msg)}
+	err := &err{MakeInner(cause, kind), msg}
 	err.frames.Capture(1)
 	return err
 }
@@ -44,12 +43,15 @@ func Wrapf(cause error, kind Kind, format string, a ...interface{}) error {
 		return nil
 	}
 
-	err := &err{MakeInner(cause, kind, fmt.Sprintf(format, a...))}
+	err := &err{MakeInner(cause, kind), fmt.Sprintf(format, a...)}
 	err.frames.Capture(1)
 	return err
 }
 
-type err struct{ Inner }
+type err struct {
+	Inner
+	msg string
+}
 
 // Format formats the error using the formatting functionality of the `xerrors`
 // package.
@@ -79,15 +81,13 @@ type Inner struct {
 	frames Frames // slice of stack trace frames
 	cause  error  // cause of this error, if any
 	kind   Kind   // specific kind of error
-	msg    string // message of error that occurred
 }
 
-func MakeInner(cause error, kind Kind, msg ...string) Inner {
+func MakeInner(cause error, kind Kind) Inner {
 	return Inner{
 		frames: make(Frames, 0, defaultFramesCapacity),
 		cause:  cause,
 		kind:   kind,
-		msg:    strings.Join(msg, " "),
 	}
 }
 
