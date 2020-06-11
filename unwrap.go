@@ -30,8 +30,8 @@ func UnwrapAll(err error) []error {
 	return res
 }
 
-// UnwrapCause walks through all wrapped errors and returns the first "cause"
-// error.
+// UnwrapCause walks through all wrapped errors and returns the last error in
+// the chain which is the "cause" error.
 func UnwrapCause(err error) error {
 	for {
 		wErr := errors.Unwrap(err)
