@@ -75,6 +75,11 @@ func Append(dest *error, err error) error {
 	return *dest
 }
 
+type MultiError interface {
+	error
+	Errors() []error
+}
+
 type multiErr struct {
 	errors []error
 	frames Frames
@@ -114,7 +119,7 @@ func (m *multiErr) Error() string {
 
 	l := len(m.errors)
 	for i, e := range m.errors {
-		fmt.Fprintf(&buf, "\n[%d/%d] %s", i+1, l, e.Error())
+		_, _ = fmt.Fprintf(&buf, "\n[%d/%d] %s", i+1, l, e.Error())
 		if i < l-1 {
 			buf.WriteRune(';')
 		}
