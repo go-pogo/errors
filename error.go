@@ -85,7 +85,7 @@ type Inner struct {
 
 func MakeInner(cause error, kind Kind) Inner {
 	return Inner{
-		frames: make(Frames, 0, defaultFramesCapacity),
+		frames: make(Frames, 0, DefaultFramesCapacity),
 		cause:  cause,
 		kind:   kind,
 	}

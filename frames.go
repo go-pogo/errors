@@ -7,16 +7,15 @@ import (
 	"golang.org/x/xerrors"
 )
 
-const (
-	defaultFramesCapacity = 5
-	invalidFrameSuffix    = " 0]}"
-)
+const invalidFrameSuffix = " 0]}"
+
+var DefaultFramesCapacity uint = 5
 
 type Frames []xerrors.Frame
 
 // CaptureFrames captures `n` frames starting from `skip`.
 func CaptureFrames(n uint, skip uint) Frames {
-	fr := make(Frames, 0, n+defaultFramesCapacity)
+	fr := make(Frames, 0, n+DefaultFramesCapacity)
 
 	var i uint
 	for ; i < n; i++ {
