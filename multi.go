@@ -29,16 +29,19 @@ func Filter(errors []error) []error {
 // provided. If only one non-nil error is provided, it will act as if
 // `TraceSkip()` is called. It returns nil when all provided errors are nil.
 func Combine(errors ...error) error {
-	errors = Filter(errors)
+	return combine(Filter(errors))
+}
+
+func combine(errors []error) error {
 	switch len(errors) {
 	case 0:
 		return nil
 	case 1:
-		return TraceSkip(errors[0], 1)
+		return TraceSkip(errors[0], 2)
 	default:
 		return &multiErr{
 			errors: errors,
-			frames: CaptureFrames(1, 2),
+			frames: CaptureFrames(1, 3),
 		}
 	}
 }
@@ -47,7 +50,7 @@ const panicAppendNilPtr = "errs.Append: dest must not be a nil pointer"
 
 // Append appends multiple non-nil errors to a single multi error `dest`.
 //
-// Important note: when using Append with defer, the pointer to the `dest` error
+// Important: when using Append with defer, the pointer to the `dest` error
 // must be a named return variable. For addition details see
 // https://golang.org/ref/spec#Defer_statements.
 func Append(dest *error, err error) error {
