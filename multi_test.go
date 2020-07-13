@@ -115,7 +115,7 @@ func TestCombine(t *testing.T) {
 		want := Trace(err).(*traceErr)
 		want.frames = *GetFrames(have)
 
-		assert.Exactly(t, want, have, "should add frame trace one single error")
+		assert.Exactly(t, want, have, "should add frame trace on single error")
 	})
 	t.Run("with errors", func(t *testing.T) {
 		err1 := errors.New("first error")
