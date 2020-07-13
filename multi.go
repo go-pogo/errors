@@ -27,7 +27,7 @@ func Filter(errors []error) []error {
 
 // Combine returns a multi error when there are more than one non-nil errors
 // provided. If only one non-nil error is provided, it will act as if
-// `TraceSkip()` is called. It returns nil when all provided errors are nil.
+// `TraceSkip` is called. It returns nil when all provided errors are nil.
 func Combine(errors ...error) error {
 	return combine(Filter(errors))
 }
