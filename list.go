@@ -36,13 +36,19 @@ func NewList(cap ...uint) *List {
 }
 
 // All returns the error slice within the list.
-func (l *List) All() []error { return l.list }
+func (l *List) All() []error {
+	if l.list == nil {
+		l.list = make([]error, 0, 0)
+	}
+	return l.list
+}
 
 // Len returns the number of errors within the list.
 func (l *List) Len() int { return len(l.list) }
 
-// Append an error to the list. It guarantees only non-nil errors are added and
-// returns `true`. It returns `false` when the error is nil.
+// Append an error to the list. It guarantees only non-nil errors are added.
+// It returns `false` when a nil error is encountered. And `true` when the error
+// is appended to the list.
 func (l *List) Append(err error) bool {
 	if err == nil {
 		return false
@@ -54,8 +60,9 @@ func (l *List) Append(err error) bool {
 	return true
 }
 
-// Prepend an error to the list. It guarantees only non-nil errors are added and
-// returns `true`. It returns `false` when the error is nil.
+// Prepend an error to the list. It guarantees only non-nil errors are added.
+// It returns `false` when a nil error is encountered. And `true` when the error
+// is prepended to the list.
 func (l *List) Prepend(err error) bool {
 	if err == nil {
 		return false
@@ -67,23 +74,8 @@ func (l *List) Prepend(err error) bool {
 	return true
 }
 
-// Iter iterates over the errors in the list. Each error is sent over the
-// returned channel. This way it is possible to iterate over the list using
-// the build in `range` keyword.
-func (l *List) Iter() <-chan error {
-	ch := make(chan error)
-	go func() {
-		l.RLock()
-		for _, v := range l.list {
-			ch <- v
-		}
-		close(ch)
-		defer l.RUnlock()
-	}()
-
-	return ch
-}
-
+// Combine the collected errors. It uses the same rules and logic as the
+// `Combine` function.
 func (l *List) Combine() error {
 	l.RLock()
 	err := combine(l.list)
