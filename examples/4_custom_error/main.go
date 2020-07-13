@@ -18,11 +18,11 @@ type CustomErr struct {
 	Value string
 }
 
-func (ce CustomErr) Error() string {
-	return fmt.Sprintf("just a custom error message `%s`", ce.Value)
+func (ce *CustomErr) Error() string {
+	return fmt.Sprintf("just a custom error message with `%s`", ce.Value)
 }
 
-func (ce CustomErr) Format(s fmt.State, v rune) { errs.FormatError(ce, s, v) }
+func (ce *CustomErr) Format(s fmt.State, v rune) { errs.FormatError(ce, s, v) }
 
 func customErr(cause error) *CustomErr {
 	err := &CustomErr{Inner: errs.MakeInner(cause, SomeError)}

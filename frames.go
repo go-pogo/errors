@@ -5,18 +5,19 @@ import (
 	"strings"
 
 	"golang.org/x/xerrors"
+
+	"github.com/roeldev/go-errs/internal"
 )
 
-const (
-	defaultFramesCapacity = 5
-	invalidFrameSuffix    = " 0]}"
-)
+const invalidFrameSuffix = " 0]}"
+
+var DefaultFramesCapacity uint = 5
 
 type Frames []xerrors.Frame
 
 // CaptureFrames captures `n` frames starting from `skip`.
 func CaptureFrames(n uint, skip uint) Frames {
-	fr := make(Frames, 0, n+defaultFramesCapacity)
+	fr := make(Frames, 0, n+DefaultFramesCapacity)
 
 	var i uint
 	for ; i < n; i++ {
@@ -41,6 +42,10 @@ func isValidFrame(f xerrors.Frame) bool {
 // Capture(0) returns the frame for the caller of Capture.
 // It returns a bool false when the captured frame contains a nil pointer.
 func (fr *Frames) Capture(skip uint) (ok bool) {
+	if !internal.CaptureFrames() {
+		return true
+	}
+
 	f := xerrors.Caller(int(skip) + 1)
 	if ok = isValidFrame(f); ok {
 		*fr = append(*fr, f)

@@ -9,19 +9,99 @@ import (
 )
 
 func TestFilter(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		have := Filter(nil)
+		assert.Exactly(t, 0, len(have))
+		assert.Exactly(t, 0, cap(have))
+	})
 	t.Run("empty", func(t *testing.T) {
-		assert.Len(t, Filter(), 0)
+		have := make([]error, 0)
+		have = Filter(have)
+
+		assert.Exactly(t, 0, len(have))
+		assert.Exactly(t, 0, cap(have))
 	})
 	t.Run("with nils", func(t *testing.T) {
-		assert.Len(t, Filter(nil, nil), 0)
+		input := []error{nil, nil}
+		have := Filter(input)
+
+		assert.Exactly(t, 0, len(have))
+		assert.Exactly(t, 2, cap(have))
 	})
 	t.Run("with errors and nils", func(t *testing.T) {
 		err1 := errors.New("some err")
 		err2 := New("", "")
 
-		f := Filter(err1, nil, nil, err2, nil)
-		assert.Equal(t, []error{err1, err2}, f)
+		input := []error{err1, nil, nil, err2, nil}
+		have := Filter(input)
+
+		assert.Equal(t, []error{err1, err2}, have)
+		assert.Equal(t, []error{err1, err2, nil, nil, nil}, have[:cap(input)])
 	})
+}
+
+func BenchmarkFilter(b *testing.B) {
+	err1 := errors.New("some err")
+	err2 := New("", "")
+
+	tests := map[string]func(errors []error) []error{
+		"filterV1": func(errors []error) []error {
+			l := len(errors)
+			if l == 0 {
+				return errors
+			}
+
+			res := make([]error, 0, l)
+			for _, err := range errors {
+				if err != nil {
+					res = append(res, err)
+				}
+			}
+			return res
+		},
+
+		"filterV2": func(errors []error) []error {
+			n := 0
+			for i, err := range errors {
+				if err == nil {
+					continue
+				}
+				if i != n {
+					errors[i] = nil
+					errors[n] = err
+				}
+				n++
+			}
+			return errors[:n]
+		},
+	}
+
+	// data sets to run the benchmarks with
+	sets := [][]error{
+		nil,
+		{},
+		{nil, nil},
+		{err1, nil, nil, err2, nil},
+		{err1, err2},
+	}
+
+	for name, fn := range tests {
+		b.Run(name, func(b *testing.B) {
+			b.StopTimer()
+			b.ReportAllocs()
+
+			for _, set := range sets {
+				input := make([]error, len(set))
+				copy(input, set)
+				b.StartTimer()
+
+				for n := 0; n < b.N; n++ {
+					fn(input)
+				}
+				b.StopTimer()
+			}
+		})
+	}
 }
 
 func TestCombine(t *testing.T) {
@@ -35,7 +115,7 @@ func TestCombine(t *testing.T) {
 		want := Trace(err).(*traceErr)
 		want.frames = *GetFrames(have)
 
-		assert.Exactly(t, want, have, "should add frame trace one single error")
+		assert.Exactly(t, want, have, "should add frame trace on single error")
 	})
 	t.Run("with errors", func(t *testing.T) {
 		err1 := errors.New("first error")
@@ -78,7 +158,7 @@ func TestAppend(t *testing.T) {
 
 		multi := have.(*multiErr)
 		assert.Exactly(t, list, multi.Errors())
-		assert.Contains(t, multi.Frames().String(), "multi_test.go:74")
+		assert.Contains(t, multi.Frames().String(), "multi_test.go:154")
 		assert.Equal(t, len(multi.frames), 1)
 	})
 }

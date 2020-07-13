@@ -7,36 +7,41 @@ import (
 	"golang.org/x/xerrors"
 )
 
-// Filter filters the provided errors and only returns the non-nil errors.
-func Filter(errors ...error) []error {
-	l := len(errors)
-	if l == 0 {
-		return errors
-	}
-
-	res := make([]error, 0, l)
-	for _, err := range errors {
-		if err != nil {
-			res = append(res, err)
+// Filter returns a slice of errors without nil values in between them. It
+// returns the slice with the length of the amount of non-nil errors but keeps
+// its original capacity.
+func Filter(errors []error) []error {
+	n := 0
+	for i, err := range errors {
+		if err == nil {
+			continue
 		}
+		if i != n {
+			errors[i] = nil
+			errors[n] = err
+		}
+		n++
 	}
-	return res
+	return errors[:n]
 }
 
 // Combine returns a multi error when there are more than one non-nil errors
 // provided. If only one non-nil error is provided, it will act as if
-// `TraceSkip()` is called. It returns nil when all provided errors are nil.
+// `TraceSkip` is called. It returns nil when all provided errors are nil.
 func Combine(errors ...error) error {
-	errors = Filter(errors...)
+	return combine(Filter(errors))
+}
+
+func combine(errors []error) error {
 	switch len(errors) {
 	case 0:
 		return nil
 	case 1:
-		return TraceSkip(errors[0], 1)
+		return TraceSkip(errors[0], 2)
 	default:
 		return &multiErr{
 			errors: errors,
-			frames: CaptureFrames(1, 2),
+			frames: CaptureFrames(1, 3),
 		}
 	}
 }
@@ -45,7 +50,7 @@ const panicAppendNilPtr = "errs.Append: dest must not be a nil pointer"
 
 // Append appends multiple non-nil errors to a single multi error `dest`.
 //
-// Important note: when using Append with defer, the pointer to the `dest` error
+// Important: when using Append with defer, the pointer to the `dest` error
 // must be a named return variable. For addition details see
 // https://golang.org/ref/spec#Defer_statements.
 func Append(dest *error, err error) error {
@@ -71,6 +76,11 @@ func Append(dest *error, err error) error {
 	}
 
 	return *dest
+}
+
+type MultiError interface {
+	error
+	Errors() []error
 }
 
 type multiErr struct {
@@ -112,7 +122,7 @@ func (m *multiErr) Error() string {
 
 	l := len(m.errors)
 	for i, e := range m.errors {
-		fmt.Fprintf(&buf, "\n[%d/%d] %s", i+1, l, e.Error())
+		_, _ = fmt.Fprintf(&buf, "\n[%d/%d] %s", i+1, l, e.Error())
 		if i < l-1 {
 			buf.WriteRune(';')
 		}
