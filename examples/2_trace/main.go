@@ -3,18 +3,18 @@ package main
 import (
 	"fmt"
 
-	"github.com/roeldev/go-errs"
+	"github.com/go-pogo/errors"
 )
 
-const SomeError errs.Kind = "some error"
+const SomeError errors.Kind = "some error"
 
 func someAction() error {
-	return errs.New(SomeError, "something happened")
+	return errors.New(SomeError, "something happened")
 }
 
 func doSomething() error {
 	err := someAction()
-	return errs.Trace(err)
+	return errors.Trace(err)
 }
 
 func main() {

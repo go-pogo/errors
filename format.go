@@ -1,7 +1,7 @@
-package errs
+package errors
 
 import (
-	"errors"
+	stderrors "errors"
 	"fmt"
 
 	"golang.org/x/xerrors"
@@ -36,5 +36,5 @@ func (f errorFormatter) FormatError(p xerrors.Printer) error {
 		// error message of its own
 		unwrap = trace.error
 	}
-	return errors.Unwrap(unwrap)
+	return stderrors.Unwrap(unwrap)
 }

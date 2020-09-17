@@ -1,7 +1,7 @@
-package errs
+package errors
 
 import (
-	"errors"
+	stderrors "errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,7 +17,7 @@ func TestGetKind(t *testing.T) {
 			want: UnknownKind,
 		},
 		"with primitive error": {
-			err:  errors.New("foo bar"),
+			err:  stderrors.New("foo bar"),
 			want: UnknownKind,
 		},
 		"with error": {

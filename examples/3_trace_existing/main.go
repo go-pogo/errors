@@ -5,21 +5,21 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/roeldev/go-errs"
+	"github.com/go-pogo/errors"
 )
 
-const SomeError errs.Kind = "some error"
+const SomeError errors.Kind = "some error"
 
 func unmarshal() (struct{}, error) {
 	dest := struct{}{}
 	err := json.Unmarshal([]byte("invalid"), &dest) // this wil result in an error
-	return dest, errs.Trace(err)
+	return dest, errors.Trace(err)
 }
 
 func someAction() error {
 	data, err := unmarshal()
 	if err != nil {
-		return errs.Wrapf(err, SomeError, "something bad happened while performing %s", "someAction")
+		return errors.Wrapf(err, SomeError, "something bad happened while performing %s", "someAction")
 	}
 
 	// this code never runs

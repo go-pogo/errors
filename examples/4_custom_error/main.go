@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/roeldev/go-errs"
+	"github.com/go-pogo/errors"
 )
 
-const SomeError errs.Kind = "some error"
+const SomeError errors.Kind = "some error"
 
 //
 // define custom error
 //
 type CustomErr struct {
-	errs.Inner
+	errors.Inner
 	Value string
 }
 
@@ -22,10 +22,10 @@ func (ce *CustomErr) Error() string {
 	return fmt.Sprintf("just a custom error message with `%s`", ce.Value)
 }
 
-func (ce *CustomErr) Format(s fmt.State, v rune) { errs.FormatError(ce, s, v) }
+func (ce *CustomErr) Format(s fmt.State, v rune) { errors.FormatError(ce, s, v) }
 
 func customErr(cause error) *CustomErr {
-	err := &CustomErr{Inner: errs.MakeInner(cause, SomeError)}
+	err := &CustomErr{Inner: errors.MakeInner(cause, SomeError)}
 	err.Frames().Capture(1)
 	return err
 }
@@ -36,7 +36,7 @@ func customErr(cause error) *CustomErr {
 func unmarshal() (struct{}, error) {
 	dest := struct{}{}
 	err := json.Unmarshal([]byte("invalid"), &dest) // this wil result in an error
-	return dest, errs.Trace(err)
+	return dest, errors.Trace(err)
 }
 
 func someAction() error {

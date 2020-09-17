@@ -1,7 +1,7 @@
-package errs
+package errors
 
 import (
-	"errors"
+	stderrors "errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -20,7 +20,7 @@ func (h *benchmarkFormatErrorHelper) Format(s fmt.State, v rune) { h.formatFn(s,
 
 func BenchmarkFormatError(b *testing.B) {
 	h := benchmarkFormatErrorHelper{
-		error: errors.New("error to test benchmark with"),
+		error: stderrors.New("error to test benchmark with"),
 	}
 
 	b.Run("without pool", func(b *testing.B) {
@@ -69,7 +69,7 @@ func TestFormatError(t *testing.T) {
 		},
 		"primitive": {
 			setup: func() error {
-				return Trace(errors.New("primitive"))
+				return Trace(stderrors.New("primitive"))
 			},
 			traceLines: []int{72},
 		},

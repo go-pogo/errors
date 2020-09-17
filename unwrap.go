@@ -1,7 +1,7 @@
-package errs
+package errors
 
 import (
-	"errors"
+	stderrors "errors"
 )
 
 // ErrorWithUnwrap interfaces provide access to an underlying error further down
@@ -25,7 +25,7 @@ func UnwrapAll(err error) []error {
 			err = t.error
 		}
 		res = append(res, err)
-		err = errors.Unwrap(err)
+		err = stderrors.Unwrap(err)
 	}
 	return res
 }
@@ -34,7 +34,7 @@ func UnwrapAll(err error) []error {
 // the chain which is the "cause" error.
 func UnwrapCause(err error) error {
 	for {
-		wErr := errors.Unwrap(err)
+		wErr := stderrors.Unwrap(err)
 		if wErr == nil {
 			break
 		}

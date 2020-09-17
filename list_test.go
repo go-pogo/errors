@@ -1,12 +1,12 @@
-package errs
+package errors
 
 import (
-	"errors"
+	stderrors "errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/roeldev/go-errs/internal"
+	"github.com/go-pogo/errors/internal"
 )
 
 func assertEmptyList(t *testing.T, list *List) {
@@ -76,7 +76,7 @@ func TestList_All(t *testing.T) {
 		assertEmptyList(t, &list)
 
 		err1 := New(UnknownKind, UnknownError)
-		err2 := errors.New("prepend me")
+		err2 := stderrors.New("prepend me")
 
 		list.Append(err1)
 		list.Append(nil)
@@ -93,7 +93,7 @@ func TestList_Combine(t *testing.T) {
 	errors := []error{
 		New(UnknownKind, UnknownError),
 		nil,
-		errors.New("foobar"),
+		stderrors.New("foobar"),
 	}
 
 	list := NewList()

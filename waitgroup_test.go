@@ -1,4 +1,4 @@
-package errs
+package errors
 
 import (
 	"sync/atomic"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/roeldev/go-errs/internal"
+	"github.com/go-pogo/errors/internal"
 )
 
 func TestWaitGroup_Go(t *testing.T) {

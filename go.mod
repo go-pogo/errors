@@ -1,4 +1,4 @@
-module github.com/roeldev/go-errs
+module github.com/go-pogo/errors
 
 go 1.13
 

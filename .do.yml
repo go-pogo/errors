@@ -5,7 +5,7 @@ setup: go get -v -t -d ./...
 
 # run tests with coverage and race detection
 test: |
-  go test -race -cover -coverprofile=coverage.out -v github.com/roeldev/go-errs
+  go test -race -cover -coverprofile=coverage.out -v github.com/go-pogo/errors
   go tool cover -func=coverage.out
 
 bench: |

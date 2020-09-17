@@ -1,4 +1,4 @@
-package errs
+package errors
 
 // UnknownKind is used for errors that are created without a distinct `Kind`.
 const UnknownKind Kind = ""

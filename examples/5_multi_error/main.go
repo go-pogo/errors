@@ -2,29 +2,29 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
+	stderrors "errors"
 	"fmt"
 	"os"
 
-	"github.com/roeldev/go-errs"
+	"github.com/go-pogo/errors"
 )
 
 func unmarshal() (struct{}, error) {
 	dest := struct{}{}
 	err := json.Unmarshal([]byte("invalid"), &dest) // this wil result in an error
-	return dest, errs.Trace(err)
+	return dest, errors.Trace(err)
 }
 
 func finish() error {
-	return errors.New("some error occurred while closing something")
+	return stderrors.New("some error occurred while closing something")
 }
 
 func someAction() (err error) {
-	defer errs.Append(&err, finish())
+	defer errors.Append(&err, finish())
 
 	data, unmarshalErr := unmarshal()
 	if unmarshalErr != nil {
-		return errs.Append(&err, unmarshalErr)
+		return errors.Append(&err, unmarshalErr)
 	}
 
 	// this code never runs

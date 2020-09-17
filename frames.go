@@ -1,4 +1,4 @@
-package errs
+package errors
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 
 	"golang.org/x/xerrors"
 
-	"github.com/roeldev/go-errs/internal"
+	"github.com/go-pogo/errors/internal"
 )
 
 const invalidFrameSuffix = " 0]}"

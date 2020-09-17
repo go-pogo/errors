@@ -1,7 +1,7 @@
-package errs
+package errors
 
 import (
-	"errors"
+	stderrors "errors"
 	"fmt"
 )
 
@@ -32,7 +32,7 @@ func TraceSkip(err error, skip uint) error {
 	}
 }
 
-// traceErr is a wrapper for "primitive" errors that do not have stack trace
+// traceErr is a wrapper for "primitive" stderrors that do not have stack trace
 // information. It does not contain an error message by itself and always
 // displays the message of the underlying wrapped error.
 type traceErr struct {
@@ -44,7 +44,7 @@ func (t *traceErr) Frames() *Frames { return &t.frames }
 
 func (t *traceErr) Unwrap() error { return t.error }
 
-func (t *traceErr) Is(target error) bool       { return errors.Is(t.error, target) }
-func (t *traceErr) As(target interface{}) bool { return errors.As(t.error, target) }
+func (t *traceErr) Is(target error) bool       { return stderrors.Is(t.error, target) }
+func (t *traceErr) As(target interface{}) bool { return stderrors.As(t.error, target) }
 
 func (t *traceErr) Format(s fmt.State, v rune) { FormatError(t, s, v) }

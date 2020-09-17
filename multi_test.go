@@ -1,7 +1,7 @@
-package errs
+package errors
 
 import (
-	"errors"
+	stderrors "errors"
 	"fmt"
 	"testing"
 
@@ -29,7 +29,7 @@ func TestFilter(t *testing.T) {
 		assert.Exactly(t, 2, cap(have))
 	})
 	t.Run("with errors and nils", func(t *testing.T) {
-		err1 := errors.New("some err")
+		err1 := stderrors.New("some err")
 		err2 := New("", "")
 
 		input := []error{err1, nil, nil, err2, nil}
@@ -41,7 +41,7 @@ func TestFilter(t *testing.T) {
 }
 
 func BenchmarkFilter(b *testing.B) {
-	err1 := errors.New("some err")
+	err1 := stderrors.New("some err")
 	err2 := New("", "")
 
 	tests := map[string]func(errors []error) []error{
@@ -110,7 +110,7 @@ func TestCombine(t *testing.T) {
 		assert.Nil(t, Combine(nil))
 	})
 	t.Run("with error", func(t *testing.T) {
-		err := errors.New("some error")
+		err := stderrors.New("some error")
 		have := Combine(err)
 		want := Trace(err).(*traceErr)
 		want.frames = *GetFrames(have)
@@ -118,7 +118,7 @@ func TestCombine(t *testing.T) {
 		assert.Exactly(t, want, have, "should add frame trace on single error")
 	})
 	t.Run("with errors", func(t *testing.T) {
-		err1 := errors.New("first error")
+		err1 := stderrors.New("first error")
 		err2 := Newf(UnknownKind, "err with trace")
 		multi := Combine(err1, err2).(*multiErr)
 
@@ -138,7 +138,7 @@ func TestAppend(t *testing.T) {
 	})
 	t.Run("with error", func(t *testing.T) {
 		var have error
-		want := errors.New("foobar")
+		want := stderrors.New("foobar")
 		assert.Same(t, want, Append(&have, want))
 		assert.Same(t, want, have)
 	})
@@ -146,7 +146,7 @@ func TestAppend(t *testing.T) {
 		var have error
 		list := []error{
 			New("nice", "err"),
-			errors.New("whoops"),
+			stderrors.New("whoops"),
 			fmt.Errorf("another %s", "error"),
 		}
 

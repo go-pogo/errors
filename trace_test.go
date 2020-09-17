@@ -1,7 +1,7 @@
-package errs
+package errors
 
 import (
-	"errors"
+	stderrors "errors"
 	"os"
 	"testing"
 
@@ -22,7 +22,7 @@ func TestTrace(t *testing.T) {
 			wantLen: 2,
 		},
 		"with primitive": {
-			err:     errors.New(""),
+			err:     stderrors.New(""),
 			wantLen: 1,
 		},
 	}
@@ -36,11 +36,11 @@ func TestTrace(t *testing.T) {
 }
 
 func TestTraceErr_Is(t *testing.T) {
-	err := errors.New("original err")
+	err := stderrors.New("original err")
 	traced := Trace(err).(*traceErr)
 
 	assert.True(t, traced.Is(err))
-	assert.True(t, errors.Is(traced, err))
+	assert.True(t, stderrors.Is(traced, err))
 }
 
 func TestTraceErr_As(t *testing.T) {
@@ -52,6 +52,6 @@ func TestTraceErr_As(t *testing.T) {
 	assert.Exactly(t, err, t1)
 
 	var t2 *os.PathError
-	assert.True(t, errors.As(trace, &t2))
+	assert.True(t, stderrors.As(trace, &t2))
 	assert.Exactly(t, t1, t2)
 }

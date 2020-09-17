@@ -1,7 +1,7 @@
-package errs
+package errors
 
 import (
-	"errors"
+	stderrors "errors"
 	"fmt"
 	"testing"
 
@@ -26,23 +26,23 @@ func TestUnwrapAll(t *testing.T) {
 			return Trace(nil)
 		},
 		"primitive error": func(want *unwrapAllHelper) error {
-			return want.add(errors.New("foo bar"))
+			return want.add(stderrors.New("foo bar"))
 		},
 		"traced primitive": func(want *unwrapAllHelper) error {
-			err := want.add(errors.New("bar: baz"))
+			err := want.add(stderrors.New("bar: baz"))
 			return Trace(err)
 		},
 		"double traced primitive": func(want *unwrapAllHelper) error {
-			err := want.add(errors.New("qux: xoo"))
+			err := want.add(stderrors.New("qux: xoo"))
 			return Trace(Trace(err))
 		},
 		"primitive wrap": func(want *unwrapAllHelper) error {
-			err := want.add(errors.New("foo bar"))
+			err := want.add(stderrors.New("foo bar"))
 			err = want.add(fmt.Errorf("cause: %w", err))
 			return err
 		},
 		"traced primitive wrap": func(want *unwrapAllHelper) error {
-			err := want.add(errors.New("foo bar"))
+			err := want.add(stderrors.New("foo bar"))
 			err = want.add(fmt.Errorf("cause: %w", err))
 			return Trace(err)
 		},
@@ -82,25 +82,25 @@ func TestUnwrapCause(t *testing.T) {
 		setup func(e error) error
 	}{
 		"primitive error": {
-			want: errors.New("foo bar"),
+			want: stderrors.New("foo bar"),
 			setup: func(e error) error {
 				return e
 			},
 		},
 		"traced primitive error": {
-			want: errors.New("foo bar"),
+			want: stderrors.New("foo bar"),
 			setup: func(e error) error {
 				return Trace(e)
 			},
 		},
 		"primitive wrap": {
-			want: errors.New("foo bar"),
+			want: stderrors.New("foo bar"),
 			setup: func(e error) error {
 				return fmt.Errorf("%w", e)
 			},
 		},
 		"traced primitive wrap": {
-			want: errors.New("baz"),
+			want: stderrors.New("baz"),
 			setup: func(e error) error {
 				return Trace(fmt.Errorf("cause: %w", e))
 			},
