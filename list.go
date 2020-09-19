@@ -6,9 +6,9 @@ import (
 
 var DefaultListCapacity uint = 8
 
-type ErrLister interface {
-	// ErrList returns a List of collected non-nil errors that were encountered.
-	ErrList() *List
+type ErrorLister interface {
+	// ErrorList returns a List of collected non-nil errors.
+	ErrorList() *List
 }
 
 type List struct {
@@ -16,7 +16,7 @@ type List struct {
 	list []error
 }
 
-const panicNewListArgs = "errs.NewList: only one argument is allowed"
+const panicNewListArgs = "errors.NewList: only one argument is allowed"
 
 // NewList creates a new List with a pre-allocated capacity of `cap`.
 func NewList(cap ...uint) *List {
@@ -43,7 +43,7 @@ func (l *List) All() []error {
 	return l.list
 }
 
-// Len returns the number of errors within the list.
+// Len returns the number of errors within the List.
 func (l *List) Len() int { return len(l.list) }
 
 // Append an error to the list. It guarantees only non-nil errors are added.
