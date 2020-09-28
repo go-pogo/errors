@@ -14,7 +14,7 @@ func WrapPanic(prefix string) {
 
 // MustPanicFormat is the template string used by the `Must()` function to
 // format its panic message.
-var MustPanicFormat = "errs.Must: %+v"
+var MustPanicFormat = "errors.Must: %+v"
 
 // Must panics when any of the given args is a non-nil error.
 // Its message is the error message of the first encountered error.
