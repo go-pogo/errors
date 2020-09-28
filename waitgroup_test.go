@@ -55,6 +55,6 @@ func TestWaitGroup_Wait(t *testing.T) {
 
 		wantList := NewList(1)
 		wantList.Append(wantErr)
-		assert.Exactly(t, wantList, wg.ErrList())
+		assert.Exactly(t, wantList, wg.ErrorList())
 	})
 }

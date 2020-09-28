@@ -14,7 +14,7 @@ type WaitGroup struct {
 }
 
 // ErrList returns a List of collected errors from the called goroutines.
-func (g *WaitGroup) ErrList() *List { return &g.list }
+func (g *WaitGroup) ErrorList() *List { return &g.list }
 
 // Wait blocks until all function calls from the Go method have returned, then
 // returns all collected errors as a combined (multi) error.
@@ -29,8 +29,6 @@ func (g *WaitGroup) Go(fn func() error) {
 	g.wg.Add(1)
 
 	go func() {
-		// check of er een slice word aangemaakt in List
-		// zoniet, dan dit in append/prepend doen
 		g.list.Append(fn())
 		g.wg.Done()
 	}()
