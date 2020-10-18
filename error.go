@@ -1,103 +1,121 @@
 package errors
 
 import (
+	stderrors "errors"
 	"fmt"
+
+	"golang.org/x/xerrors"
 )
 
-// UnknownError is an error message that is returned when an error has no
-// message and is of `UnknownKind`
-const UnknownError string = "unknown error"
-
-// New creates a new error.
-func New(kind Kind, msg string) error {
-	err := &err{MakeInner(nil, kind), msg}
-	err.frames.Capture(1)
+// New is an alias of errors.New. It returns an error that formats as the given
+// text. Each call to New returns a distinct error value even if the text is
+// identical.
+func New(text string) error {
+	err := toCommonErr(stderrors.New(text), false)
+	err.Trace(1)
 	return err
 }
 
 // Newf formats an error message according to a format specifier and provided
-// arguments and creates a new error the same way `New()` does.
-func Newf(kind Kind, format string, a ...interface{}) error {
-	err := &err{MakeInner(nil, kind), fmt.Sprintf(format, a...)}
-	err.frames.Capture(1)
+// arguments and creates a new error the same way New does. It serves as an
+// alternative to fmt.Errorf.
+func Newf(format string, a ...interface{}) error {
+	err := toCommonErr(fmt.Errorf(format, a...), false)
+	err.Trace(1)
 	return err
 }
 
-// Wrap creates a new error that wraps around the causing error, thus extending
-// the error chain. In contrast to `New()`, it will only create a new error
-// when the cause error is not `nil`.
-func Wrap(cause error, kind Kind, msg string) error {
-	if cause == nil {
-		return nil
-	}
-
-	err := &err{MakeInner(cause, kind), msg}
-	err.frames.Capture(1)
-	return err
+// Upgrade upgrades the given standard error by wrapping it with a Proxy that
+// can record stack frames and has basic error formatting.
+// The original parent error can always be retrieved by calling Original on the
+// result of Upgrade. Thus
+//
+//   Original(Upgrade(err)) == err
+//
+// equals true.
+func Upgrade(parent error) error {
+	return toCommonErr(parent, true)
 }
 
-// Wrapf formats an error message according to a format specifier and provided
-// arguments and creates a new error the same way `Wrap()` does.
-func Wrapf(cause error, kind Kind, format string, a ...interface{}) error {
-	if cause == nil {
-		return nil
+// toCommonErr upgrades the parent error by wrapping it with a commonErr.
+func toCommonErr(parent error, upgrade bool) *commonErr {
+	if e, ok := parent.(*commonErr); ok {
+		return e
 	}
 
-	err := &err{MakeInner(cause, kind), fmt.Sprintf(format, a...)}
-	err.frames.Capture(1)
-	return err
-}
-
-type err struct {
-	Inner
-	msg string
-}
-
-// Format formats the error using the formatting functionality of the `xerrors`
-// package.
-func (e *err) Format(s fmt.State, v rune) { FormatError(e, s, v) }
-
-// Error returns the message of the error with its `Kind` as prefix. If `Kind`
-// is of `UnknownKind` the prefix is omitted. If message is empty, the string
-// value of the kind is returned. When both kind and message are empty
-// "unknown error" will be returned.
-func (e *err) Error() string {
-	if e.kind == "" && e.msg == "" {
-		return UnknownError
-	}
-	if e.kind == "" {
-		return e.msg
-	}
-	if e.msg == "" {
-		return e.kind.String()
+	ce := &commonErr{
+		error:   Original(parent),
+		upgrade: upgrade,
 	}
 
-	return e.kind.String() + ": " + e.msg
-}
-
-// Inner is by itself not an error and is designed to be embedded in (custom)
-// errors.
-type Inner struct {
-	frames Frames // slice of stack trace frames
-	cause  error  // cause of this error, if any
-	kind   Kind   // specific kind of error
-}
-
-func MakeInner(cause error, kind Kind) Inner {
-	return Inner{
-		frames: make(Frames, 0, DefaultFramesCapacity),
-		cause:  cause,
-		kind:   kind,
+	switch e := parent.(type) {
+	case *kindErr:
+		ce.kind = e.kind
 	}
+
+	return ce
 }
 
-// Frames returns a slice of captured `xerrors.Frame` types linked to this error.
-func (e *Inner) Frames() *Frames { return &e.frames }
+type commonErr struct {
+	error
+	tracer
 
-// Unwrap returns the next error in the error chain. It returns `nil` if there
+	// upgrade indicates whether this commonErr is the original error (= false)
+	// or if the error in the error property is the original error (= true)
+	upgrade bool
+	cause   error // cause of this error, if any
+	kind    Kind
+}
+
+// Original returns the original error before it was upgraded. This is never the
+// case for errors that were created with New, Newf, Wrap of Wrapf.
+func (ce *commonErr) Original() error {
+	if ce.upgrade {
+		return ce.error
+	}
+	return ce
+}
+
+func (ce *commonErr) Kind() Kind {
+	if ce.kind != UnknownKind {
+		return ce.kind
+	}
+	if e, ok := ce.error.(Kinder); ok {
+		return e.Kind()
+	}
+
+	return UnknownKind
+}
+
+// Format formats the error using FormatError.
+func (ce *commonErr) Format(s fmt.State, v rune) { FormatError(ce, s, v) }
+
+// FormatError prints the error to the xerrors.Printer using PrintError and
+// returns the next error in the error chain, if any.
+func (ce *commonErr) FormatError(p xerrors.Printer) error {
+	PrintError(p, ce)
+	return ce.Unwrap()
+}
+
+// todo: implement correct as method
+func (ce *commonErr) As(target interface{}) bool {
+	return As(ce.error, target)
+}
+
+// Unwrap returns the next error in the error chain. It returns nil if there
 // is no next error.
-func (e *Inner) Unwrap() error { return e.cause }
+func (ce *commonErr) Unwrap() error {
+	if ce.cause != nil {
+		return ce.cause
+	}
+	return Unwrap(ce.error)
+}
 
-// Kind returns the `Kind` of the error. It returns `UnknownKind` when no `Kind`
-// is set.
-func (e *Inner) Kind() Kind { return e.kind }
+func (ce *commonErr) Error() string {
+	return kindErrMsg(ce.error.Error(), ce.Kind())
+}
+
+// GoString prints a basic error syntax.
+func (ce *commonErr) GoString() string {
+	return goString(ce, ce.error)
+}

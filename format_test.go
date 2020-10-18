@@ -4,57 +4,12 @@ import (
 	stderrors "errors"
 	"fmt"
 	"strconv"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/xerrors"
+
+	"github.com/go-pogo/errors/internal"
 )
-
-type benchmarkFormatErrorHelper struct {
-	error
-	formatFn func(s fmt.State, v rune)
-}
-
-func (h *benchmarkFormatErrorHelper) Format(s fmt.State, v rune) { h.formatFn(s, v) }
-
-func BenchmarkFormatError(b *testing.B) {
-	h := benchmarkFormatErrorHelper{
-		error: stderrors.New("error to test benchmark with"),
-	}
-
-	b.Run("without pool", func(b *testing.B) {
-		h.formatFn = func(s fmt.State, v rune) {
-			f := errorFormatter{h.error}
-			xerrors.FormatError(f, s, v)
-		}
-
-		b.ReportAllocs()
-		for n := 0; n < b.N; n++ {
-			_ = fmt.Sprintf("%+v", h)
-		}
-	})
-
-	p := sync.Pool{
-		New: func() interface{} {
-			return errorFormatter{}
-		},
-	}
-	b.Run("with pool", func(b *testing.B) {
-		h.formatFn = func(s fmt.State, v rune) {
-			f := p.Get().(errorFormatter)
-			f.error = h.error
-
-			xerrors.FormatError(f, s, v)
-			p.Put(f)
-		}
-
-		b.ReportAllocs()
-		for n := 0; n < b.N; n++ {
-			_ = fmt.Sprintf("%+v", h)
-		}
-	})
-}
 
 func TestFormatError(t *testing.T) {
 	tests := map[string]struct {
@@ -63,30 +18,30 @@ func TestFormatError(t *testing.T) {
 	}{
 		"error": {
 			setup: func() error {
-				return New(UnknownKind, "some err")
+				return New("some err")
 			},
-			traceLines: []int{66},
+			traceLines: []int{21},
 		},
-		"primitive": {
+		"traced primitive": {
 			setup: func() error {
 				return Trace(stderrors.New("primitive"))
 			},
-			traceLines: []int{72},
+			traceLines: []int{27},
 		},
 		"traced error": {
 			setup: func() error {
-				err := New(UnknownKind, "another err")
+				err := New("another err")
 				return Trace(err)
 			},
-			traceLines: []int{78, 79},
+			traceLines: []int{33, 34},
 		},
 		"multi error": {
 			setup: func() error {
-				err1 := New(UnknownKind, "err1")
-				err2 := New(UnknownKind, "err2")
+				err1 := New("err1")
+				err2 := New("err2")
 				return Combine(err1, err2)
 			},
-			traceLines: []int{85, 86, 87},
+			traceLines: []int{40, 41, 42},
 		},
 	}
 
@@ -100,4 +55,18 @@ func TestFormatError(t *testing.T) {
 			}
 		})
 	}
+	t.Run("", func(t *testing.T) {
+		internal.DisableCaptureFrames()
+		defer internal.EnableCaptureFrames()
+
+		rootCause := stderrors.New("root cause")
+		assert.Equal(t,
+			fmt.Sprintf("%+v", WithFormatter(rootCause)),
+			fmt.Sprintf("%+v", formatErrFixture{error: rootCause}),
+		)
+	})
 }
+
+type formatErrFixture struct{ error }
+
+func (f *formatErrFixture) Format(s fmt.State, v rune) { FormatError(f, s, v) }

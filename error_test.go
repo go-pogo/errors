@@ -1,85 +1,107 @@
 package errors
 
 import (
-	"strings"
+	stderrors "errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/xerrors"
+
+	"github.com/go-pogo/errors/internal"
 )
 
-func TestErr_Error(t *testing.T) {
+func TestSameErrors(t *testing.T) {
+	internal.DisableCaptureFrames()
+	defer internal.EnableCaptureFrames()
+
 	cause := xerrors.New("cause of error")
-	tests := map[string]map[string]struct {
-		err1 error
-		err2 error
-		want string
+	tests := map[string]map[string][2]error{
+		"New&Newf": {
+			"empty": {New(""), Newf("")},
+			"message only": {
+				New("some `foo` happened"),
+				Newf("some `%s` happened", "foo"),
+			},
+		},
+		"Wrap&Wrapf": {
+			"empty": {
+				Wrap(cause, ""),
+				Wrapf(cause, ""),
+			},
+			"message only": {
+				Wrap(cause, "some `foo` happened"),
+				Wrapf(cause, "some `%s` happened", "foo"),
+			},
+		},
+	}
+
+	for group, ts := range tests {
+		t.Run(group, func(t *testing.T) {
+			for name, errs := range ts {
+				t.Run(name, func(t *testing.T) {
+					assert.Equal(t, errs[0].Error(), errs[1].Error())
+				})
+			}
+		})
+	}
+}
+
+func TestUpgrade(t *testing.T) {
+	internal.DisableCaptureFrames()
+	defer internal.EnableCaptureFrames()
+
+	msg := "a really important err msg"
+	kind := Kind("some kind")
+
+	tests := map[string]struct {
+		err error
+		fn  func(want *commonErr, err error)
 	}{
-		"New/Newf": {
-			"empty": {
-				err1: New("", ""),
-				err2: Newf("", ""),
-				want: UnknownError,
-			},
-			"kind only": {
-				err1: New("foo", ""),
-				err2: Newf("foo", ""),
-				want: "foo",
-			},
-			"message only": {
-				err1: New(UnknownKind, "some `foo` happened"),
-				err2: Newf(UnknownKind, "some `%s` happened", "foo"),
-				want: "some `foo` happened",
-			},
-			"kind and message": {
-				err1: New("foo error", "unexpected `bar`"),
-				err2: Newf("foo error", "unexpected `%s`", "bar"),
-				want: "foo error: unexpected `bar`",
+		"common error": {
+			err: New(msg),
+			fn: func(want *commonErr, err error) {
+				want.error = stderrors.New(msg)
 			},
 		},
-		"Wrap/Wrapf": {
-			"empty": {
-				err1: Wrap(cause, "", ""),
-				err2: Wrapf(cause, "", ""),
-				want: UnknownError,
+		"std error": {
+			err: stderrors.New(msg),
+			fn: func(want *commonErr, err error) {
+				want.error = err
+				want.upgrade = true
 			},
-			"kind only": {
-				err1: Wrap(cause, "foo", ""),
-				err2: Wrapf(cause, "foo", ""),
-				want: "foo",
+		},
+		"common error with kind": {
+			err: WithKind(New(msg), kind),
+			fn: func(want *commonErr, err error) {
+				want.error = stderrors.New(msg)
+				want.kind = kind
 			},
-			"message only": {
-				err1: Wrap(cause, UnknownKind, "some `foo` happened"),
-				err2: Wrapf(cause, UnknownKind, "some `%s` happened", "foo"),
-				want: "some `foo` happened",
-			},
-			"kind and message": {
-				err1: Wrap(cause, "foo error", "unexpected `bar`"),
-				err2: Wrapf(cause, "foo error", "unexpected `%s`", "bar"),
-				want: "foo error: unexpected `bar`",
+		},
+		"std error with kind": {
+			err: WithKind(stderrors.New(msg), kind),
+			fn: func(want *commonErr, err error) {
+				want.error = stderrors.New(msg)
+				want.upgrade = true
+				want.kind = kind
 			},
 		},
 	}
 
-	for fn, ts := range tests {
-		fn = strings.Replace(fn, "/", "&", 1)
-		for name, tc := range ts {
-			t.Run(fn+"__"+name, func(t *testing.T) {
-				assert.Equal(t, tc.want, tc.err1.Error())
-				assert.Equal(t, tc.want, tc.err2.Error())
-			})
-		}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			want := toCommonErr(nil, false)
+			tc.fn(want, tc.err)
+
+			assert.Exactly(t, want, Upgrade(tc.err))
+		})
 	}
 }
 
-func TestWrap(t *testing.T) {
-	t.Run("with nil cause", func(t *testing.T) {
-		assert.Nil(t, Wrap(nil, UnknownKind, "foobar"))
-	})
-}
-
-func TestWrapf(t *testing.T) {
-	t.Run("with nil cause", func(t *testing.T) {
-		assert.Nil(t, Wrapf(nil, UnknownKind, "%s", "foobar"))
-	})
+func TestCommonErr_GoString(t *testing.T) {
+	msg := "just some error message"
+	assert.Equal(t,
+		fmt.Sprintf("&\"%s\".commonErr{error:%#v}", fullPkgName, stderrors.New(msg)),
+		fmt.Sprintf("%#v", New(msg)),
+	)
 }

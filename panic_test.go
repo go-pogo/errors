@@ -45,6 +45,6 @@ func TestMust(t *testing.T) {
 			assert.Contains(t, recover(), errStr)
 		}()
 
-		Must(false, New(UnknownKind, errStr))
+		Must(false, New(errStr))
 	})
 }

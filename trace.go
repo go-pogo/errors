@@ -1,50 +1,46 @@
 package errors
 
-import (
-	stderrors "errors"
-	"fmt"
-)
-
-// Trace wraps an existing error with information about the stack frame its
-// called from. Errors that implement the `ErrorWithStackTrace` interface add
-// the frame to the existing stack trace. Other "simple" errors are wrapped
-// in a `traceErr` type.
-func Trace(err error) error {
-	return TraceSkip(err, 1)
+// StackTracer interfaces provide access to a stack of traced Frames.
+type StackTracer interface {
+	error
+	StackFrames() *Frames
+	Trace(skipFrames uint)
 }
 
-// TraceSkip, just like Trace(), wraps an existing error with information about
-// the stack frame its called from. The stack frame is selected based on the
-// skip argument.
-func TraceSkip(err error, skip uint) error {
+// Trace adds stack trace context to the error by calling StackTracer.Trace on
+// the error. If the error is not a StackTracer it is wrapped with a Proxy that
+// implements this interface.
+func Trace(err error) error { return TraceSkip(err, 1) }
+
+// TraceSkip adds stack trace context to the error just like Trace. Unlike Trace
+// it passes the skipFrames argument to StackTracer.Trace.
+func TraceSkip(err error, skipFrames uint) error {
 	if err == nil {
 		return nil
 	}
 
-	if e, ok := err.(ErrorWithFrames); ok {
-		e.Frames().Capture(skip + 1)
-		return err
+	if e, ok := err.(StackTracer); ok {
+		e.Trace(skipFrames + 1)
+		return e
 	}
 
-	return &traceErr{
-		error:  err,
-		frames: CaptureFrames(1, skip+2),
-	}
+	ce := toCommonErr(err, true)
+	ce.Trace(skipFrames + 1)
+	return ce
 }
 
-// traceErr is a wrapper for "primitive" stderrors that do not have stack trace
-// information. It does not contain an error message by itself and always
-// displays the message of the underlying wrapped error.
-type traceErr struct {
-	error
+func GetStackFrames(err error) *Frames {
+	if e, ok := err.(StackTracer); ok {
+		return e.StackFrames()
+	}
+	return nil
+}
+
+type tracer struct {
 	frames Frames
 }
 
-func (t *traceErr) Frames() *Frames { return &t.frames }
+// Frames returns a slice of captured xerrors.Frame types linked to this error.
+func (e *tracer) StackFrames() *Frames { return &e.frames }
 
-func (t *traceErr) Unwrap() error { return t.error }
-
-func (t *traceErr) Is(target error) bool       { return stderrors.Is(t.error, target) }
-func (t *traceErr) As(target interface{}) bool { return stderrors.As(t.error, target) }
-
-func (t *traceErr) Format(s fmt.State, v rune) { FormatError(t, s, v) }
+func (e *tracer) Trace(skipFrames uint) { e.frames.capture(skipFrames + 1) }
