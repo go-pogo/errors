@@ -13,6 +13,7 @@ func TestWaitGroup_Go(t *testing.T) {
 	internal.DisableCaptureFrames()
 	defer internal.EnableCaptureFrames()
 
+	want := New("some err")
 	var wg WaitGroup
 	var i int32
 
@@ -22,15 +23,16 @@ func TestWaitGroup_Go(t *testing.T) {
 	})
 	wg.Go(func() error {
 		atomic.AddInt32(&i, 1)
-		return New(UnknownKind, UnknownError)
+		return want
 	})
 	wg.Go(func() error {
 		atomic.AddInt32(&i, 1)
 		return nil
 	})
 
-	assert.Exactly(t, New(UnknownKind, UnknownError), wg.Wait())
+	have := wg.Wait()
 	assert.Exactly(t, int32(3), i)
+	assert.Same(t, want, have)
 }
 
 func TestWaitGroup_Wait(t *testing.T) {
@@ -46,12 +48,12 @@ func TestWaitGroup_Wait(t *testing.T) {
 		internal.DisableCaptureFrames()
 		defer internal.EnableCaptureFrames()
 
+		wantErr := New("some err")
 		wg.Go(func() error {
-			return New(UnknownKind, UnknownError)
+			return wantErr
 		})
 
-		wantErr := New(UnknownKind, UnknownError)
-		assert.Exactly(t, wantErr, wg.Wait())
+		assert.Same(t, wantErr, wg.Wait())
 
 		wantList := NewList(1)
 		wantList.Append(wantErr)
