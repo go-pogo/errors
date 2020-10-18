@@ -42,7 +42,7 @@ func TestList_Append(t *testing.T) {
 		assert.False(t, NewList().Append(nil))
 	})
 	t.Run("error", func(t *testing.T) {
-		assert.True(t, NewList().Append(New(UnknownKind, UnknownError)))
+		assert.True(t, NewList().Append(New("some err")))
 	})
 }
 
@@ -51,7 +51,7 @@ func TestList_Prepend(t *testing.T) {
 		assert.False(t, NewList().Prepend(nil))
 	})
 	t.Run("error", func(t *testing.T) {
-		assert.True(t, NewList().Prepend(New(UnknownKind, UnknownError)))
+		assert.True(t, NewList().Prepend(New("some err")))
 	})
 }
 
@@ -67,7 +67,7 @@ func TestList_All(t *testing.T) {
 		var list List
 		assertEmptyList(t, &list)
 
-		err := New(UnknownKind, UnknownError)
+		err := New("some err")
 		list.Append(err)
 		assert.Exactly(t, []error{err}, list.All())
 	})
@@ -75,7 +75,7 @@ func TestList_All(t *testing.T) {
 		var list List
 		assertEmptyList(t, &list)
 
-		err1 := New(UnknownKind, UnknownError)
+		err1 := New("some err")
 		err2 := stderrors.New("prepend me")
 
 		list.Append(err1)
@@ -90,18 +90,20 @@ func TestList_Combine(t *testing.T) {
 	internal.DisableCaptureFrames()
 	defer internal.EnableCaptureFrames()
 
-	errors := []error{
-		New(UnknownKind, UnknownError),
+	errs := []error{
+		New("some err"),
 		nil,
 		stderrors.New("foobar"),
 	}
 
-	list := NewList()
-	for _, e := range errors {
+	list := NewList(3)
+	for _, e := range errs {
 		list.Append(e)
 	}
 
 	multi := list.Combine().(MultiError)
-	assert.Exactly(t, []error{errors[0], errors[2]}, multi.Errors())
-	assert.Exactly(t, Combine(errors...), multi)
+	assert.Exactly(t, []error{errs[0], errs[2]}, multi.Errors())
+
+	combined := Combine(errs...)
+	assert.Equal(t, combined, multi)
 }

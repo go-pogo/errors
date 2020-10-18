@@ -60,6 +60,15 @@ func (l *List) Append(err error) bool {
 	return true
 }
 
+func prepend(errs []error, err error) []error {
+	errs = append(errs, err)
+	if len(errs) > 1 {
+		copy(errs[1:], errs)
+		errs[0] = err
+	}
+	return errs
+}
+
 // Prepend an error to the list. It guarantees only non-nil errors are added.
 // It returns `false` when a nil error is encountered. And `true` when the error
 // is prepended to the list.
@@ -69,7 +78,7 @@ func (l *List) Prepend(err error) bool {
 	}
 
 	l.Lock()
-	l.list = append([]error{err}, l.list...)
+	l.list = prepend(l.list, err)
 	l.Unlock()
 	return true
 }
