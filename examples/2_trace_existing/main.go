@@ -8,8 +8,6 @@ import (
 	"github.com/go-pogo/errors"
 )
 
-const SomeError errors.Kind = "some error"
-
 func unmarshal() (struct{}, error) {
 	dest := struct{}{}
 	err := json.Unmarshal([]byte("invalid"), &dest) // this wil result in an error
@@ -19,7 +17,7 @@ func unmarshal() (struct{}, error) {
 func someAction() error {
 	data, err := unmarshal()
 	if err != nil {
-		return errors.Wrapf(err, SomeError, "something bad happened while performing %s", "someAction")
+		return errors.Wrapf(err, "something bad happened while performing %s", "someAction")
 	}
 
 	// this code never runs

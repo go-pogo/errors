@@ -6,10 +6,10 @@ import (
 	"github.com/go-pogo/errors"
 )
 
-const SomeError errors.Kind = "some error"
+const someError errors.Kind = "some error"
 
 func someAction() error {
-	return errors.New(SomeError, "something happened")
+	return errors.WithKind(errors.New("something happened"), someError)
 }
 
 func doSomething() error {

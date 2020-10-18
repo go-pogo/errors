@@ -8,26 +8,24 @@ import (
 	"github.com/go-pogo/errors"
 )
 
-const SomeError errors.Kind = "some error"
-
 //
 // define custom error
 //
-type CustomErr struct {
-	errors.Inner
+type customErr struct {
+	Cause error
 	Value string
 }
 
-func (ce *CustomErr) Error() string {
+func (ce *customErr) Error() string {
 	return fmt.Sprintf("just a custom error message with `%s`", ce.Value)
 }
 
-func (ce *CustomErr) Format(s fmt.State, v rune) { errors.FormatError(ce, s, v) }
+func (ce *customErr) Format(s fmt.State, v rune) { errors.FormatError(ce, s, v) }
 
-func customErr(cause error) *CustomErr {
-	err := &CustomErr{Inner: errors.MakeInner(cause, SomeError)}
-	err.Frames().Capture(1)
-	return err
+func newCustomErr(cause error) error {
+	return errors.Upgrade(&customErr{
+		Cause: cause,
+	})
 }
 
 //
@@ -42,9 +40,9 @@ func unmarshal() (struct{}, error) {
 func someAction() error {
 	data, err := unmarshal()
 	if err != nil {
-		err := customErr(err)
-		err.Value = "some important value"
-		return err
+		err := newCustomErr(err)
+		errors.Original(err).(*customErr).Value = "some important value"
+		return errors.Trace(err)
 	}
 
 	// this code never runs
