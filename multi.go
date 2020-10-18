@@ -27,7 +27,7 @@ func Filter(errors []error) []error {
 
 // Combine returns a multi error when there are more than one non-nil errors
 // provided. If only one non-nil error is provided, it will act as if
-// `TraceSkip` is called. It returns nil when all provided errors are nil.
+// TraceSkip is called. It returns nil when all provided errors are nil.
 func Combine(errors ...error) error {
 	return combine(Filter(errors))
 }
@@ -39,18 +39,18 @@ func combine(errors []error) error {
 	case 1:
 		return TraceSkip(errors[0], 2)
 	default:
-		return &multiErr{
-			errors: errors,
-			frames: CaptureFrames(1, 3),
-		}
+		m := newMultiErr(errors)
+		m.Trace(2)
+
+		return m
 	}
 }
 
-const panicAppendNilPtr = "errs.Append: dest must not be a nil pointer"
+const panicAppendNilPtr = "errors.Append: dest must not be a nil pointer"
 
-// Append appends multiple non-nil errors to a single multi error `dest`.
+// Append appends multiple non-nil errors to a single multi error dest.
 //
-// Important: when using Append with defer, the pointer to the `dest` error
+// Important: when using Append with defer, the pointer to the dest error
 // must be a named return variable. For addition details see
 // https://golang.org/ref/spec#Defer_statements.
 func Append(dest *error, err error) error {
@@ -69,10 +69,9 @@ func Append(dest *error, err error) error {
 		d.errors = append(d.errors, err)
 
 	default:
-		*dest = &multiErr{
-			errors: []error{*dest, err},
-			frames: CaptureFrames(1, 2),
-		}
+		m := newMultiErr([]error{*dest, err})
+		m.Trace(1)
+		*dest = m
 	}
 
 	return *dest
@@ -84,24 +83,32 @@ type MultiError interface {
 }
 
 type multiErr struct {
+	tracer
 	errors []error
-	frames Frames
 }
 
-// Frames returns a slice of captured `xerrors.Frame` types linked to this multi
-// error.
-func (m *multiErr) Frames() *Frames { return &m.frames }
+func newMultiErr(errors []error) *multiErr {
+	return &multiErr{
+		errors: errors,
+	}
+}
 
 // Errors returns the errors within the multi error.
 func (m *multiErr) Errors() []error { return m.errors }
 
-// Format prints the errors using `xerrors.FormatError()`.
-// See the `golang.org/x/xerrors` package for additional information.
-func (m *multiErr) Format(s fmt.State, v rune) { xerrors.FormatError(m, s, v) }
+func (m *multiErr) Is(target error) bool {
+	for _, err := range m.errors {
+		if Is(err, target) {
+			return true
+		}
+	}
+	return false
+}
 
-// FormatError prints the error using `xerrors.FormatError()` and a formatter
-// that implements the `xerrors.Formatter` interface.
-// See the `golang.org/x/xerrors` package for additional information.
+// Format formats the error using FormatError.
+func (m *multiErr) Format(s fmt.State, v rune) { FormatError(m, s, v) }
+
+// FormatError prints a summary of the encountered errors to p.
 func (m *multiErr) FormatError(p xerrors.Printer) error {
 	p.Print(m.Error())
 	if p.Detail() {
@@ -128,4 +135,9 @@ func (m *multiErr) Error() string {
 		}
 	}
 	return buf.String()
+}
+
+// GoString prints a basic error syntax.
+func (m *multiErr) GoString() string {
+	return goString(m, nil)
 }
