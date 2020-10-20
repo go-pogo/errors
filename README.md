@@ -60,4 +60,6 @@ Additional detailed documentation is available at [go.dev][doc-url]
 
 
 ## License
-[GPL-3.0+](LICENSE) © 2019-2020 [Roel Schut](https://roelschut.nl)
+Copyright © 2019-2020 [Roel Schut](https://roelschut.nl). All rights reserved.
+
+This project is governed by a BSD-style license that can be found in the [LICENSE](LICENSE) file.

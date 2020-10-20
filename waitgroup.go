@@ -1,3 +1,7 @@
+// Copyright (c) 2020, Roel Schut. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package errors
 
 import (
@@ -27,7 +31,6 @@ func (g *WaitGroup) Wait() error {
 // collected, combined and returned by Wait.
 func (g *WaitGroup) Go(fn func() error) {
 	g.wg.Add(1)
-
 	go func() {
 		g.list.Append(fn())
 		g.wg.Done()
