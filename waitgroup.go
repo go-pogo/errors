@@ -9,9 +9,9 @@ import (
 )
 
 // A WaitGroup is a collection of goroutines working on subtasks that are part
-// of the same overall task. Unlike `errgroup.Group`, it collects possible
-// errors returned from the subtasks and does not cancel the group when an
-// error is encountered.
+// of the same overall task. It collects possible errors returned from the
+// subtasks and, unlike golang.org/x/sync/errgroup.Group, does not cancel the
+// group when an error is encountered.
 type WaitGroup struct {
 	wg   sync.WaitGroup
 	list List

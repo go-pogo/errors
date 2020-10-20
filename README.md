@@ -1,5 +1,5 @@
 errors
-=======
+======
 
 [![Latest release][latest-release-img]][latest-release-url]
 [![Build status][build-status-img]][build-status-url]
@@ -16,7 +16,12 @@ errors
 [doc-url]: https://pkg.go.dev/github.com/go-pogo/errors
 
 
-Errors is a Go package designed to make working with (custom) errors an easy task. It supports adding stacktrace frames so tracing the cause of an error is a breeze. 
+Package `errors` implements functions to manipulate errors, record stack frames
+and apply basic formatting to errors.
+It is inspired by the `golang.org/x/xerrors` package and is design to be a
+drop in replacement for it as well as the standard library's `errors` package.
+The package contains additional functions, interfaces and structs for working
+with goroutines, multiple errors and custom error types.
 
 
 ```sh
@@ -52,11 +57,11 @@ some error: something bad happened while performing someAction:
 
 
 ## Documentation
-Additional detailed documentation is available at [go.dev][doc-url]
+Additional detailed documentation is available at [pkg.go.dev][doc-url]
 
 
-### Created with
-<a href="https://www.jetbrains.com/?from=roeldev" target="_blank"><img src="https://pbs.twimg.com/profile_images/1206615658638856192/eiS7UWLo_400x400.jpg" width="35" /></a>
+## Created with
+<a href="https://www.jetbrains.com/?from=go-pogo" target="_blank"><img src="https://pbs.twimg.com/profile_images/1206615658638856192/eiS7UWLo_400x400.jpg" width="35" /></a>
 
 
 ## License
