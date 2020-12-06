@@ -40,26 +40,40 @@ func (h errChainHelper) last() error {
 
 // test if the root cause error matches all wrapping errors in the chain
 func TestIs(t *testing.T) {
+	rootCause := New("root cause")
+	stdRootCause := stderrors.New("root cause")
+
 	chains := map[string]func(chain *errChainHelper){
 		"base": func(chain *errChainHelper) {
-			_ = chain.append(New("root cause"))
+			_ = chain.append(rootCause)
 		},
 		"std": func(chain *errChainHelper) {
-			_ = chain.append(stderrors.New("root cause"))
+			_ = chain.append(stdRootCause)
 		},
 		"traced base": func(chain *errChainHelper) {
-			err := chain.append(New("root cause"))
+			err := chain.append(rootCause)
 			_ = chain.append(Trace(err))
 		},
 		"traced std": func(chain *errChainHelper) {
-			err := chain.append(stderrors.New("root cause"))
+			err := chain.append(stdRootCause)
 			_ = chain.append(Trace(err))
+		},
+		"base with kind": func(chain *errChainHelper) {
+			err := chain.append(rootCause)
+			_ = chain.append(WithKind(err, "kind"))
+		},
+		"std with kind": func(chain *errChainHelper) {
+			err := chain.append(stdRootCause)
+			_ = chain.append(WithKind(err, "kind"))
 		},
 	}
 
 	tests := map[string]func(parent error) error{
 		"WithKind": func(parent error) error {
 			return WithKind(parent, "some kind")
+		},
+		"WithExitCode": func(parent error) error {
+			return WithExitCode(parent, 1)
 		},
 		"WithFormatter": func(parent error) error {
 			return WithFormatter(parent)
@@ -154,7 +168,6 @@ func TestAs(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			// Clear the target pointer, in case it was set in a previous test.
 			val := reflect.ValueOf(tc.target)
 			val.Elem().Set(reflect.Zero(reflect.TypeOf(tc.target).Elem()))
 

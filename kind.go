@@ -63,12 +63,4 @@ type kindErr struct {
 
 func (e *kindErr) Original() error { return e.error }
 func (e *kindErr) Kind() Kind      { return e.kind }
-func (e *kindErr) Error() string   { return kindErrMsg(e.error.Error(), e.kind) }
-
-func kindErrMsg(msg string, kind Kind) string {
-	if kind == UnknownKind {
-		return msg
-	}
-
-	return kind.String() + ": " + msg
-}
+func (e *kindErr) Error() string   { return errMsg(e.error.Error(), e.kind, 0) }

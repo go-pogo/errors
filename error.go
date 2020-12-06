@@ -7,6 +7,8 @@ package errors
 import (
 	stderrors "errors"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"golang.org/x/xerrors"
 )
@@ -66,9 +68,10 @@ type commonErr struct {
 
 	// upgrade indicates whether this commonErr is the original error (= false)
 	// or if the error in the error property is the original error (= true)
-	upgrade bool
-	cause   error // cause of this error, if any
-	kind    Kind
+	upgrade  bool
+	cause    error // cause of this error, if any
+	kind     Kind
+	exitCode int
 }
 
 // Original returns the original error before it was upgraded. This is never the
@@ -90,6 +93,8 @@ func (ce *commonErr) Kind() Kind {
 
 	return UnknownKind
 }
+
+func (ce *commonErr) ExitCode() int { return ce.exitCode }
 
 // Format formats the error using FormatError.
 func (ce *commonErr) Format(s fmt.State, v rune) { FormatError(ce, s, v) }
@@ -116,10 +121,28 @@ func (ce *commonErr) Unwrap() error {
 }
 
 func (ce *commonErr) Error() string {
-	return kindErrMsg(ce.error.Error(), ce.Kind())
+	return errMsg(ce.error.Error(), ce.Kind(), ce.exitCode)
 }
 
 // GoString prints a basic error syntax.
 func (ce *commonErr) GoString() string {
 	return goString(ce, ce.error)
+}
+
+func errMsg(msg string, kind Kind, code int) string {
+	var buf strings.Builder
+	if kind != UnknownKind {
+		buf.WriteString(kind.String())
+		buf.WriteRune(':')
+		buf.WriteRune(' ')
+	}
+	if code != 0 {
+		buf.WriteRune('[')
+		buf.WriteString(strconv.Itoa(code))
+		buf.WriteRune(']')
+		buf.WriteRune(' ')
+	}
+
+	buf.WriteString(msg)
+	return buf.String()
 }

@@ -41,13 +41,10 @@ func combine(errors []error) error {
 	case 0:
 		return nil
 	case 1:
-		return TraceSkip(errors[0], 2)
-	default:
-		m := newMultiErr(errors)
-		m.Trace(2)
-
-		return m
+		return errors[0]
 	}
+
+	return newMultiErr(errors)
 }
 
 const panicAppendNilPtr = "errors.Append: dest must not be a nil pointer"
@@ -88,7 +85,8 @@ type MultiError interface {
 
 type multiErr struct {
 	tracer
-	errors []error
+	errors   []error
+	exitCode int
 }
 
 func newMultiErr(errors []error) *multiErr {
@@ -99,6 +97,7 @@ func newMultiErr(errors []error) *multiErr {
 
 // Errors returns the errors within the multi error.
 func (m *multiErr) Errors() []error { return m.errors }
+func (m *multiErr) ExitCode() int   { return m.exitCode }
 
 func (m *multiErr) Is(target error) bool {
 	for _, err := range m.errors {
