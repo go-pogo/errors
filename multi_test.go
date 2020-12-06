@@ -113,14 +113,6 @@ func TestCombine(t *testing.T) {
 		assert.Nil(t, Combine())
 		assert.Nil(t, Combine(nil))
 	})
-	// t.Run("with error", func(t *testing.T) {
-	// 	err := stderrors.New("some error")
-	// 	have := Combine(err)
-	// 	want := Trace(err).(*traceErr)
-	// 	want.frames = *GetStackFrames(have)
-	//
-	// 	assert.Exactly(t, want, have, "should add frame trace on single error")
-	// })
 	t.Run("with errors", func(t *testing.T) {
 		err1 := stderrors.New("first error")
 		err2 := Newf("err with trace")
@@ -133,7 +125,7 @@ func TestCombine(t *testing.T) {
 func TestAppend(t *testing.T) {
 	t.Run("panic on nil dest ptr", func(t *testing.T) {
 		assert.PanicsWithValue(t, panicAppendNilPtr, func() {
-			Append(nil, New("bar"))
+			_ = Append(nil, New("bar"))
 		})
 	})
 	t.Run("with nil", func(t *testing.T) {
@@ -154,15 +146,15 @@ func TestAppend(t *testing.T) {
 			fmt.Errorf("another %s", "error"),
 		}
 
-		Append(&have, errs[0]) // set value to *have
-		Append(&have, errs[1]) // create multi error from errors 0 and 1
-		Append(&have, errs[2]) // append error 2 to multi error
+		_ = Append(&have, errs[0]) // set value to *have
+		_ = Append(&have, errs[1]) // create multi error from errors 0 and 1
+		_ = Append(&have, errs[2]) // append error 2 to multi error
 
 		assert.IsType(t, new(multiErr), have)
 
 		multi := have.(*multiErr)
 		assert.Exactly(t, errs, multi.Errors())
-		assert.Contains(t, multi.StackFrames().String(), "multi_test.go:154")
+		assert.Contains(t, multi.StackFrames().String(), "multi_test.go:150")
 		assert.Equal(t, len(multi.frames), 1)
 	})
 }

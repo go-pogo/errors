@@ -7,12 +7,11 @@ package errors
 import (
 	stderrors "errors"
 	"fmt"
+	"runtime"
 	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/go-pogo/errors/internal"
 )
 
 func TestFormatError(t *testing.T) {
@@ -21,31 +20,29 @@ func TestFormatError(t *testing.T) {
 		traceLines []int
 	}{
 		"error": {
-			setup: func() error {
-				return New("some err")
-			},
-			traceLines: []int{21},
+			setup:      func() error { return New("some err") },
+			traceLines: traceHelper(-1, 1),
 		},
 		"traced primitive": {
 			setup: func() error {
 				return Trace(stderrors.New("primitive"))
 			},
-			traceLines: []int{27},
+			traceLines: traceHelper(-2, 1),
 		},
 		"traced error": {
 			setup: func() error {
 				err := New("another err")
 				return Trace(err)
 			},
-			traceLines: []int{33, 34},
+			traceLines: traceHelper(-3, 2),
 		},
 		"multi error": {
 			setup: func() error {
 				err1 := New("err1")
 				err2 := New("err2")
-				return Combine(err1, err2)
+				return Trace(Combine(err1, err2))
 			},
-			traceLines: []int{40, 41, 42},
+			traceLines: traceHelper(-4, 3),
 		},
 	}
 
@@ -59,18 +56,19 @@ func TestFormatError(t *testing.T) {
 			}
 		})
 	}
-	t.Run("", func(t *testing.T) {
-		internal.DisableCaptureFrames()
-		defer internal.EnableCaptureFrames()
-
-		rootCause := stderrors.New("root cause")
-		assert.Equal(t,
-			fmt.Sprintf("%+v", WithFormatter(rootCause)),
-			fmt.Sprintf("%+v", formatErrFixture{error: rootCause}),
-		)
-	})
 }
 
-type formatErrFixture struct{ error }
+func traceHelper(offset int, total int) []int {
+	_, _, line, ok := runtime.Caller(1)
+	if !ok {
+		return nil
+	}
 
-func (f *formatErrFixture) Format(s fmt.State, v rune) { FormatError(f, s, v) }
+	line += offset
+
+	res := make([]int, 0, total)
+	for i := 0; i < total; i++ {
+		res = append(res, line+i)
+	}
+	return res
+}
