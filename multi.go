@@ -29,9 +29,9 @@ func Filter(errors []error) []error {
 	return errors[:n]
 }
 
-// Combine returns a multi error when there are more than one non-nil errors
-// provided. If only one non-nil error is provided, it will act as if
-// TraceSkip is called. It returns nil when all provided errors are nil.
+// Combine returns a MultiError when more than one non-nil errors are provided.
+// It returns a single error when only one error is passed, and nil if no
+// non-nil errors are provided.
 func Combine(errors ...error) error {
 	return combine(Filter(errors))
 }

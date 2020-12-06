@@ -17,7 +17,7 @@ type WaitGroup struct {
 	list List
 }
 
-// ErrList returns a List of collected errors from the called goroutines.
+// ErrorList returns a List of collected errors from the called goroutines.
 func (g *WaitGroup) ErrorList() *List { return &g.list }
 
 // Wait blocks until all function calls from the Go method have returned, then

@@ -22,7 +22,7 @@ type List struct {
 
 const panicNewListArgs = "errors.NewList: only one argument is allowed"
 
-// NewList creates a new List with a pre-allocated capacity of `cap`.
+// NewList creates a new List with a pre-allocated capacity of cap.
 func NewList(cap ...uint) *List {
 	var c int
 	switch len(cap) {
@@ -51,7 +51,7 @@ func (l *List) All() []error {
 func (l *List) Len() int { return len(l.list) }
 
 // Append an error to the list. It guarantees only non-nil errors are added.
-// It returns `false` when a nil error is encountered. And `true` when the error
+// It returns false when a nil error is encountered. And true when the error
 // is appended to the list.
 func (l *List) Append(err error) bool {
 	if err == nil {
@@ -60,6 +60,20 @@ func (l *List) Append(err error) bool {
 
 	l.Lock()
 	l.list = append(l.list, err)
+	l.Unlock()
+	return true
+}
+
+// Prepend an error to the list. It guarantees only non-nil errors are added.
+// It returns false when a nil error is encountered. And true when the error
+// is prepended to the list.
+func (l *List) Prepend(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	l.Lock()
+	l.list = prepend(l.list, err)
 	l.Unlock()
 	return true
 }
@@ -73,22 +87,8 @@ func prepend(errs []error, err error) []error {
 	return errs
 }
 
-// Prepend an error to the list. It guarantees only non-nil errors are added.
-// It returns `false` when a nil error is encountered. And `true` when the error
-// is prepended to the list.
-func (l *List) Prepend(err error) bool {
-	if err == nil {
-		return false
-	}
-
-	l.Lock()
-	l.list = prepend(l.list, err)
-	l.Unlock()
-	return true
-}
-
 // Combine the collected errors. It uses the same rules and logic as the
-// `Combine` function.
+// Combine function.
 func (l *List) Combine() error {
 	l.RLock()
 	err := combine(l.list)
