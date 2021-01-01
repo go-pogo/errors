@@ -7,6 +7,7 @@ package errors
 import (
 	stderrors "errors"
 	"fmt"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -125,17 +126,20 @@ func TestCombine(t *testing.T) {
 func TestAppend(t *testing.T) {
 	t.Run("panic on nil dest ptr", func(t *testing.T) {
 		assert.PanicsWithValue(t, panicAppendNilPtr, func() {
-			_ = Append(nil, New("bar"))
+			Append(nil, New("bar"))
 		})
 	})
 	t.Run("with nil", func(t *testing.T) {
-		want := New("err")
-		assert.Same(t, want, Append(&want, nil))
+		err := New("err")
+		want := err.Error()
+		Append(&err, nil)
+		assert.Equal(t, want, err.Error())
 	})
 	t.Run("with error", func(t *testing.T) {
 		var have error
 		want := stderrors.New("foobar")
-		assert.Same(t, want, Append(&have, want))
+		Append(&have, want)
+
 		assert.Same(t, want, have)
 	})
 	t.Run("with errors", func(t *testing.T) {
@@ -146,15 +150,17 @@ func TestAppend(t *testing.T) {
 			fmt.Errorf("another %s", "error"),
 		}
 
-		_ = Append(&have, errs[0]) // set value to *have
-		_ = Append(&have, errs[1]) // create multi error from errors 0 and 1
-		_ = Append(&have, errs[2]) // append error 2 to multi error
+		Append(&have, errs[0]) // set value to *have
+		Append(&have, errs[1]) // create multi error from errors 0 and 1
+		Append(&have, errs[2]) // append error 2 to multi error
 
 		assert.IsType(t, new(multiErr), have)
 
 		multi := have.(*multiErr)
 		assert.Exactly(t, errs, multi.Errors())
-		assert.Contains(t, multi.StackFrames().String(), "multi_test.go:150")
 		assert.Equal(t, len(multi.frames), 1)
+
+		_, file, line, _ := runtime.Caller(0)
+		assert.Contains(t, multi.StackFrames().String(), fmt.Sprintf("%s:%d", file, line-9))
 	})
 }

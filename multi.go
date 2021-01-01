@@ -54,28 +54,29 @@ const panicAppendNilPtr = "errors.Append: dest must not be a nil pointer"
 // Important: when using Append with defer, the pointer to the dest error
 // must be a named return variable. For addition details see
 // https://golang.org/ref/spec#Defer_statements.
-func Append(dest *error, err error) error {
+func Append(dest *error, errs ...error) {
 	if dest == nil {
 		panic(panicAppendNilPtr)
 	}
-	if err == nil {
-		return *dest
+
+	for _, err := range errs {
+		if err == nil {
+			continue
+		}
+
+		switch d := (*dest).(type) {
+		case nil:
+			*dest = err
+
+		case *multiErr:
+			d.errors = append(d.errors, err)
+
+		default:
+			m := newMultiErr([]error{*dest, err})
+			m.Trace(1)
+			*dest = m
+		}
 	}
-
-	switch d := (*dest).(type) {
-	case nil:
-		*dest = err
-
-	case *multiErr:
-		d.errors = append(d.errors, err)
-
-	default:
-		m := newMultiErr([]error{*dest, err})
-		m.Trace(1)
-		*dest = m
-	}
-
-	return *dest
 }
 
 type MultiError interface {
