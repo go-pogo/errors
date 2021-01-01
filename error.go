@@ -130,13 +130,18 @@ func (ce *commonErr) GoString() string {
 }
 
 func errMsg(msg string, kind Kind, code int) string {
+	hasKind, hasCode := kind != UnknownKind, code != 0
+	if !hasKind && !hasCode {
+		return msg
+	}
+
 	var buf strings.Builder
-	if kind != UnknownKind {
+	if hasKind {
 		buf.WriteString(kind.String())
 		buf.WriteRune(':')
 		buf.WriteRune(' ')
 	}
-	if code != 0 {
+	if hasCode {
 		buf.WriteRune('[')
 		buf.WriteString(strconv.Itoa(code))
 		buf.WriteRune(']')
