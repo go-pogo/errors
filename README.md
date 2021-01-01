@@ -11,7 +11,7 @@ errors
 
 [build-status-img]: https://github.com/go-pogo/errors/workflows/Go/badge.svg
 
-[build-status-url]: https://github.com/go-pogo/errors/actions?query=workflow%3AGo
+[build-status-url]: https://github.com/go-pogo/errors/actions?query=workflow%3ATest
 
 [report-img]: https://goreportcard.com/badge/github.com/go-pogo/errors
 
