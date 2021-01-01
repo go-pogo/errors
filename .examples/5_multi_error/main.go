@@ -24,7 +24,8 @@ func someAction() (err error) {
 
 	data, unmarshalErr := unmarshal()
 	if unmarshalErr != nil {
-		return errors.Append(&err, unmarshalErr)
+		errors.Append(&err, unmarshalErr)
+		return err
 	}
 
 	// this code never runs
