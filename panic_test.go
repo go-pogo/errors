@@ -52,3 +52,25 @@ func TestMust(t *testing.T) {
 		Must(false, New(errStr))
 	})
 }
+
+func TestCatchPanic(t *testing.T) {
+	t.Run("panic string", func(t *testing.T) {
+		var want error
+		defer func() {
+			assert.Equal(t, &panicErr{"paniek!"}, want)
+		}()
+		defer CatchPanic(&want)
+		panic("paniek!")
+	})
+
+	t.Run("panic error", func(t *testing.T) {
+		var have, want error
+		defer func() {
+			assert.Same(t, have, want)
+		}()
+		defer CatchPanic(&want)
+
+		have = New("panic error")
+		panic(have)
+	})
+}
