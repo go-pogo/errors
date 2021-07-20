@@ -44,7 +44,8 @@ type tracer struct {
 	frames Frames
 }
 
-// Frames returns a slice of captured xerrors.Frame types linked to this error.
+// StackFrames returns a slice of captured xerrors.Frame types linked to this
+// error.
 func (e *tracer) StackFrames() *Frames { return &e.frames }
 
 func (e *tracer) Trace(skipFrames uint) { e.frames.capture(skipFrames + 1) }
