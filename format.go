@@ -12,14 +12,14 @@ import (
 	"golang.org/x/xerrors"
 )
 
-// WithFormatter wraps the error with a Proxy that is capable of basic error
-// formatting, but only if it is not already wrapped.
+// WithFormatter wraps the error with an UpgradedError that is capable of basic
+// error formatting, but only if it is not already wrapped.
 func WithFormatter(parent error) xerrors.Formatter {
 	switch e := parent.(type) {
 	case *formatterErr:
 		return e
 
-	case Proxy:
+	case UpgradedError:
 		return toCommonErr(parent, true)
 	}
 
