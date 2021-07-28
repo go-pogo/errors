@@ -22,12 +22,12 @@ errors
 [doc-url]: https://pkg.go.dev/github.com/go-pogo/errors
 
 
-Package `errors` implements functions to manipulate errors, record stack frames
-and apply basic formatting to errors. It is inspired by `golang.org/x/xerrors`
-and is designed to be a drop in replacement for it, as well as the standard
-library's `errors` package. The package contains additional functions,
-interfaces and structs for working with goroutines, multiple errors and custom
-error types.
+Package `errors` contains additional functions, interfaces and structs for recording stack frames,
+applying basic formatting, working with goroutines, multiple errors and custom error types.
+
+It is inspired by the `golang.org/x/xerrors` package and is designed to be a drop in replacement for
+it, as well as the standard library's `errors`
+package.
 
 ```sh
 go get github.com/go-pogo/errors
@@ -38,9 +38,12 @@ import "github.com/go-pogo/errors"
 ```
 
 ## Stack trace
-Every error can track stack trace information. Just wrap it
-with `errors.Trace()` and an addition stack frame is captured and stored within
-the error.
+Every error can track stack trace information. Just wrap it with `errors.Trace` and an additional
+stack frame is captured and stored within the error.
+
+```go
+err = errors.Trace(err)
+```
 
 ```text
 some error: something happened:
@@ -49,6 +52,23 @@ some error: something happened:
     main.someAction
        .../errors/examples/2_trace/main.go:12
 ```
+
+## Formatting
+Wrap an existing error with `errors.WithFormatter` to upgrade the error to include basic formatting.
+Formatting is done using `xerrors.FormatError` and thus the same verbs are supported.
+
+```go
+fmt.Printf("%+v", errors.WithFormatter(err))
+```
+
+## Catch panics
+A convenient function is available to catch panics and store them as an error.
+
+```go
+var err error
+defer errors.CatchPanic(&err)
+```
+
 
 ## Documentation
 Additional detailed documentation is available at [pkg.go.dev][doc-url]
@@ -59,5 +79,4 @@ Additional detailed documentation is available at [pkg.go.dev][doc-url]
 ## License
 Copyright © 2019-2021 [Roel Schut](https://roelschut.nl). All rights reserved.
 
-This project is governed by a BSD-style license that can be found in
-the [LICENSE](LICENSE) file.
+This project is governed by a BSD-style license that can be found in the [LICENSE](LICENSE) file.

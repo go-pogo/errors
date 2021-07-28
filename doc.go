@@ -2,12 +2,13 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package errors implements functions to manipulate errors, record stack frames
-// and apply basic formatting to errors.
-// It is inspired by the golang.org/x/xerrors package and is design to be a
-// drop in replacement for it as well as the standard library's errors package.
-// The package contains additional functions, interfaces and structs for working
-// with goroutines, multiple errors and custom error types.
+// Package errors contains additional functions, interfaces and structs for
+// recording stack frames, applying basic formatting, working with goroutines,
+// multiple errors and custom error types.
+//
+// It is inspired by the golang.org/x/xerrors package and is designed to be a
+// drop in replacement for it, as well as the standard library's errors
+// package.
 //
 // The New and Newf functions create errors whose content is a text message and
 // who can trace stack frames. Wrap and Wrapf create errors by wrapping an
