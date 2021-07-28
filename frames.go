@@ -20,7 +20,7 @@ type Frames []xerrors.Frame
 // capture(0) returns the frame for the caller of capture.
 // It returns a bool false when the captured frame contains a nil pointer.
 func (fr *Frames) capture(skip uint) (ok bool) {
-	if !internal.CaptureFrames() {
+	if !internal.CaptureFrames {
 		return true
 	}
 

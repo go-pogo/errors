@@ -19,10 +19,10 @@ func Wrap(cause error, text string) error {
 		return nil
 	}
 
-	err := toCommonErr(stderrors.New(text), false)
-	err.cause = cause
-	err.Trace(1)
-	return err
+	ce := toCommonErr(stderrors.New(text), false)
+	ce.cause = cause
+	ce.Trace(1)
+	return ce
 }
 
 // Wrapf formats an error message according to a format specifier and provided
@@ -32,10 +32,10 @@ func Wrapf(cause error, format string, a ...interface{}) error {
 		return nil
 	}
 
-	err := toCommonErr(fmt.Errorf(format, a...), false)
-	err.cause = cause
-	err.Trace(1)
-	return err
+	ce := toCommonErr(fmt.Errorf(format, a...), false)
+	ce.cause = cause
+	ce.Trace(1)
+	return ce
 }
 
 // An Unwrapper unpacks a wrapped error.
