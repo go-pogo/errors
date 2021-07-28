@@ -11,13 +11,13 @@ type StackTracer interface {
 	Trace(skipFrames uint)
 }
 
-// Trace adds stack trace context to the error by calling StackTracer.Trace on
-// the error. If the error is not a StackTracer it is wrapped with a Proxy that
-// implements this interface.
+// Trace adds stack trace context to the error by calling StackTracer.Trace
+// on the error. If the error is not a StackTracer it is wrapped with an
+// UpgradedError that implements this interface.
 func Trace(err error) error { return TraceSkip(err, 1) }
 
-// TraceSkip adds stack trace context to the error just like Trace. Unlike Trace
-// it passes the skipFrames argument to StackTracer.Trace.
+// TraceSkip adds stack trace context to the error just like Trace. Unlike
+// Trace it passes the skipFrames argument to StackTracer.Trace.
 func TraceSkip(err error, skipFrames uint) error {
 	if err == nil {
 		return nil
@@ -46,6 +46,6 @@ type tracer struct {
 
 // StackFrames returns a slice of captured xerrors.Frame types linked to this
 // error.
-func (e *tracer) StackFrames() *Frames { return &e.frames }
+func (t *tracer) StackFrames() *Frames { return &t.frames }
 
-func (e *tracer) Trace(skipFrames uint) { e.frames.capture(skipFrames + 1) }
+func (t *tracer) Trace(skipFrames uint) { t.frames.capture(skipFrames + 1) }

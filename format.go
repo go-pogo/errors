@@ -27,10 +27,10 @@ func WithFormatter(parent error) xerrors.Formatter {
 }
 
 // FormatError calls the FormatError method of err with an xerrors.Printer
-// configured according to s and verb, and writes the result to s.
-// If err is not an xerrors.Formatter it will wrap the error with a Proxy that
-// is capable of basic error formatting using WithFormatter.
-func FormatError(err error, s fmt.State, verb rune) {
+// configured according to state and verb, and writes the result to state.
+// If err is not an xerrors.Formatter it will wrap the error with an
+// UpgradedError that is capable of basic error formatting using WithFormatter.
+func FormatError(err error, state fmt.State, verb rune) {
 	f, ok := err.(xerrors.Formatter)
 	if !ok {
 		f = &formatterErr{err}
