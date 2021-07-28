@@ -7,6 +7,7 @@ package errors
 import (
 	"testing"
 
+	"github.com/go-pogo/errors/internal"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -54,10 +55,13 @@ func TestMust(t *testing.T) {
 }
 
 func TestCatchPanic(t *testing.T) {
+	internal.DisableCaptureFrames()
+	defer internal.EnableCaptureFrames()
+
 	t.Run("panic string", func(t *testing.T) {
 		var want error
 		defer func() {
-			assert.Equal(t, &panicErr{"paniek!"}, want)
+			assert.Equal(t, toCommonErr(&panicErr{"paniek!"}, true), want)
 		}()
 		defer CatchPanic(&want)
 		panic("paniek!")
