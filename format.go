@@ -15,6 +15,10 @@ import (
 // WithFormatter wraps the error with an UpgradedError that is capable of basic
 // error formatting, but only if it is not already wrapped.
 func WithFormatter(parent error) xerrors.Formatter {
+	if parent == nil {
+		return nil
+	}
+
 	switch e := parent.(type) {
 	case *formatterErr:
 		return e
@@ -36,7 +40,7 @@ func FormatError(err error, state fmt.State, verb rune) {
 		f = &formatterErr{err}
 	}
 
-	xerrors.FormatError(f, s, verb)
+	xerrors.FormatError(f, state, verb)
 }
 
 func PrintError(printer xerrors.Printer, err error) {

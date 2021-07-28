@@ -14,6 +14,46 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestWithFormatter(t *testing.T) {
+	t.Run("std error", func(t *testing.T) {
+		rootCause := stderrors.New("root cause error")
+		have := WithFormatter(rootCause)
+
+		t.Run("add", func(t *testing.T) {
+			want := &formatterErr{error: rootCause}
+			assertErrorIs(t, have, rootCause)
+			assert.Exactly(t, want, have)
+		})
+		t.Run("overwrite", func(t *testing.T) {
+			have = WithFormatter(have)
+			want := &formatterErr{error: rootCause}
+			assertErrorIs(t, have, rootCause)
+			assert.Exactly(t, want, have)
+		})
+	})
+
+	t.Run("common error", func(t *testing.T) {
+		rootCause := New("root cause error")
+		have := WithFormatter(rootCause)
+
+		t.Run("set", func(t *testing.T) {
+			want := toCommonErr(Original(rootCause), true)
+			assertErrorIs(t, have, rootCause)
+			assert.Exactly(t, want, have)
+		})
+		t.Run("overwrite", func(t *testing.T) {
+			have = WithFormatter(have)
+			want := toCommonErr(Original(rootCause), true)
+			assertErrorIs(t, have, rootCause)
+			assert.Exactly(t, want, have)
+		})
+	})
+
+	t.Run("nil", func(t *testing.T) {
+		assert.Exactly(t, nil, WithFormatter(nil))
+	})
+}
+
 func TestFormatError(t *testing.T) {
 	tests := map[string]struct {
 		setup      func() error
