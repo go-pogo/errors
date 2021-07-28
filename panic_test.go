@@ -66,7 +66,8 @@ func TestCatchPanic(t *testing.T) {
 	t.Run("panic error", func(t *testing.T) {
 		var have, want error
 		defer func() {
-			assert.Same(t, have, want)
+			assert.Same(t, want, have)
+			assert.Equal(t, "panic error", have.Error())
 		}()
 		defer CatchPanic(&want)
 

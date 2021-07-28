@@ -36,11 +36,14 @@ func Must(args ...interface{}) {
 // inside a deferred function, eg `defer func(){ CatchPanic(&err }()`.
 func CatchPanic(dest *error) {
 	if r := recover(); r != nil {
-		err, ok := r.(error)
-		if !ok {
-			err = &panicErr{v: r}
+		if err, ok := r.(error); ok {
+			Append(dest, err)
+			return
 		}
-		Append(dest, err)
+
+		ce := toCommonErr(&panicErr{v: r}, true)
+		ce.Trace(2)
+		Append(dest, ce)
 	}
 }
 
