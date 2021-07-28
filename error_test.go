@@ -70,6 +70,7 @@ func TestUpgrade(t *testing.T) {
 
 	msg := "a really important err msg"
 	kind := Kind("some kind")
+	code := 123
 
 	tests := map[string]struct {
 		err error
@@ -101,6 +102,21 @@ func TestUpgrade(t *testing.T) {
 				want.error = stderrors.New(msg)
 				want.upgrade = true
 				want.kind = kind
+			},
+		},
+		"common error with exit code": {
+			err: WithExitCode(New(msg), code),
+			fn: func(want *commonErr, err error) {
+				want.error = stderrors.New(msg)
+				want.exitCode = code
+			},
+		},
+		"std error with exit code": {
+			err: WithExitCode(stderrors.New(msg), code),
+			fn: func(want *commonErr, err error) {
+				want.error = stderrors.New(msg)
+				want.upgrade = true
+				want.exitCode = code
 			},
 		},
 	}
