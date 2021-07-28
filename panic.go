@@ -29,3 +29,29 @@ func Must(args ...interface{}) {
 		}
 	}
 }
+
+// CatchPanic recovers from a panic and wraps it in an error. It then calls
+// Append with the provided dest *error and wrapped panic.
+// Use CatchPanic directly with defer. It is not possible to use CatchPanic
+// inside a deferred function, eg `defer func(){ CatchPanic(&err }()`.
+func CatchPanic(dest *error) {
+	if r := recover(); r != nil {
+		if err, ok := r.(error); ok {
+			Append(dest, err)
+			return
+		}
+
+		ce := toCommonErr(&panicErr{v: r}, true)
+		ce.Trace(2)
+		Append(dest, ce)
+	}
+}
+
+type panicErr struct{ v interface{} }
+
+func (e *panicErr) Error() string {
+	if v, ok := e.v.(string); ok {
+		return v
+	}
+	return fmt.Sprintf("%T: %v", e.v, e.v)
+}

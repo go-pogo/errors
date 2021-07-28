@@ -4,8 +4,7 @@
 
 package internal
 
-var captureFrames = true
+var CaptureFrames = true
 
-func CaptureFrames() bool   { return captureFrames }
-func EnableCaptureFrames()  { captureFrames = true }
-func DisableCaptureFrames() { captureFrames = false }
+func EnableCaptureFrames()  { CaptureFrames = true }
+func DisableCaptureFrames() { CaptureFrames = false }

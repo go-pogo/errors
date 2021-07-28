@@ -34,7 +34,7 @@ func WithKind(parent error, kind Kind) Kinder {
 		e.kind = kind
 		return e
 
-	case Proxy:
+	case UpgradedError:
 		ce := toCommonErr(parent, true)
 		ce.kind = kind
 		return ce

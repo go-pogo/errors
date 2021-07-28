@@ -19,7 +19,7 @@ func WithExitCode(parent error, exitCode int) ExitCoder {
 		e.exitCode = exitCode
 		return e
 
-	case Proxy:
+	case UpgradedError:
 		ce := toCommonErr(parent, true)
 		ce.exitCode = exitCode
 		return ce

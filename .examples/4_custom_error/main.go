@@ -1,9 +1,12 @@
+// Copyright (c) 2020, Roel Schut. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package main
 
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/go-pogo/errors"
 )
@@ -22,12 +25,6 @@ func (ce *customErr) Error() string {
 
 func (ce *customErr) Format(s fmt.State, v rune) { errors.FormatError(ce, s, v) }
 
-func newCustomErr(cause error) error {
-	return errors.Upgrade(&customErr{
-		Cause: cause,
-	})
-}
-
 //
 // actual "program"
 //
@@ -40,9 +37,10 @@ func unmarshal() (struct{}, error) {
 func someAction() error {
 	data, err := unmarshal()
 	if err != nil {
-		err := newCustomErr(err)
-		errors.Original(err).(*customErr).Value = "some important value"
-		return errors.Trace(err)
+		return errors.Trace(&customErr{
+			Cause: err,
+			Value: "some important value",
+		})
 	}
 
 	// this code never runs
@@ -56,6 +54,5 @@ func main() {
 		fmt.Printf("%v\n", err)
 		fmt.Println("//////////")
 		fmt.Printf("%+v\n", err)
-		os.Exit(1)
 	}
 }
