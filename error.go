@@ -31,10 +31,28 @@ func Newf(format string, a ...interface{}) error {
 	return err
 }
 
-// Upgrade upgrades the given standard error by wrapping it with a Proxy that
-// can record stack frames and has basic error formatting.
-// The original parent error can always be retrieved by calling Original on the
-// result of Upgrade. Thus
+// An UpgradedError is capable of returning its original error.
+type UpgradedError interface {
+	error
+	// Original returns the Original error that resides in the UpgradedError.
+	Original() (original error)
+}
+
+// Original returns the Original error if err is an UpgradedError. Otherwise it
+// will return the given error err.
+func Original(err error) error {
+	p, ok := err.(UpgradedError)
+	if !ok {
+		return err
+	}
+
+	return p.Original()
+}
+
+// Upgrade upgrades the given standard error by wrapping it with an
+// UpgradedError that can record stack frames and has basic error formatting.
+// The original parent error can always be retrieved by calling Original on
+// the result of Upgrade. Thus
 //
 //   Original(Upgrade(err)) == err
 //
@@ -49,17 +67,12 @@ func toCommonErr(parent error, upgrade bool) *commonErr {
 		return e
 	}
 
-	ce := &commonErr{
-		error:   Original(parent),
-		upgrade: upgrade,
+	return &commonErr{
+		error:    Original(parent),
+		upgrade:  upgrade,
+		kind:     GetKind(parent),
+		exitCode: GetExitCode(parent),
 	}
-
-	switch e := parent.(type) {
-	case *kindErr:
-		ce.kind = e.kind
-	}
-
-	return ce
 }
 
 type commonErr struct {
@@ -83,16 +96,7 @@ func (ce *commonErr) Original() error {
 	return ce
 }
 
-func (ce *commonErr) Kind() Kind {
-	if ce.kind != UnknownKind {
-		return ce.kind
-	}
-	if e, ok := ce.error.(Kinder); ok {
-		return e.Kind()
-	}
-
-	return UnknownKind
-}
+func (ce *commonErr) Kind() Kind { return ce.kind }
 
 func (ce *commonErr) ExitCode() int { return ce.exitCode }
 
@@ -117,7 +121,10 @@ func (ce *commonErr) Unwrap() error {
 	if ce.cause != nil {
 		return ce.cause
 	}
-	return Unwrap(ce.error)
+	if ce.upgrade {
+		return Unwrap(ce.error)
+	}
+	return nil
 }
 
 func (ce *commonErr) Error() string {
