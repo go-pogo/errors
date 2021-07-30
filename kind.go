@@ -48,12 +48,15 @@ func WithKind(parent error, kind Kind) Kinder {
 
 // GetKind returns the Kind of the error if it implements the Kinder
 // interface. If not, it returns UnknownKind.
-func GetKind(err error) Kind {
+func GetKind(err error) Kind { return GetKindOr(err, UnknownKind) }
+
+// GetKindOr returns the Kind of the error if it implements the Kinder
+// interface. If not, it returns the provided value or.
+func GetKindOr(err error, or Kind) Kind {
 	if e, ok := err.(Kinder); ok {
 		return e.Kind()
 	}
-
-	return UnknownKind
+	return or
 }
 
 type kindErr struct {
