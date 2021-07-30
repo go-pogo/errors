@@ -67,34 +67,44 @@ func TestWithExitCode(t *testing.T) {
 
 func TestGetExitCode(t *testing.T) {
 	tests := map[string]struct {
-		err  error
-		want int
+		err    error
+		want   int
+		orWant map[int]int
 	}{
 		"with nil": {
-			err:  nil,
-			want: 0,
+			err:    nil,
+			orWant: map[int]int{1: 1, 2: 2},
 		},
 		"std error": {
-			err:  stderrors.New("std err"),
-			want: 0,
+			err:    stderrors.New("std err"),
+			orWant: map[int]int{1: 1, 2: 2},
 		},
 		"std error with kind": {
-			err:  WithExitCode(stderrors.New("std err"), 12),
-			want: 12,
+			err:    WithExitCode(stderrors.New("std err"), 12),
+			want:   12,
+			orWant: map[int]int{1: 12, 2: 12},
 		},
 		"common error": {
-			err:  New("some error without kind"),
-			want: 0,
+			err:    New("some error without kind"),
+			orWant: map[int]int{1: 0, 2: 0},
 		},
 		"common error with kind": {
-			err:  WithExitCode(New("bar"), 34),
-			want: 34,
+			err:    WithExitCode(New("bar"), 34),
+			want:   34,
+			orWant: map[int]int{1: 34, 2: 34},
 		},
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			assert.Exactly(t, tc.want, GetExitCode(tc.err))
+			assert.Exactly(t, tc.want, GetExitCodeOr(tc.err, 0))
+
+			for or, want := range tc.orWant {
+				t.Run("", func(t *testing.T) {
+					assert.Exactly(t, want, GetExitCodeOr(tc.err, or))
+				})
+			}
 		})
 	}
 }
