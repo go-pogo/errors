@@ -69,35 +69,55 @@ func TestWithKind(t *testing.T) {
 }
 
 func TestGetKind(t *testing.T) {
+	const (
+		foo Kind = "foo"
+		bar Kind = "bar"
+		baz Kind = "baz"
+		xoo Kind = "xoo"
+	)
+
 	tests := map[string]struct {
-		err  error
-		want Kind
+		err    error
+		want   Kind
+		orWant map[Kind]Kind
 	}{
 		"with nil": {
-			err:  nil,
-			want: UnknownKind,
+			err:    nil,
+			want:   UnknownKind,
+			orWant: map[Kind]Kind{foo: foo, bar: bar},
 		},
 		"std error": {
-			err:  stderrors.New("std err"),
-			want: UnknownKind,
+			err:    stderrors.New("std err"),
+			want:   UnknownKind,
+			orWant: map[Kind]Kind{foo: foo, bar: bar},
 		},
 		"std error with kind": {
-			err:  WithKind(stderrors.New("std err"), "xoo"),
-			want: Kind("xoo"),
+			err:    WithKind(stderrors.New("std err"), xoo),
+			want:   xoo,
+			orWant: map[Kind]Kind{foo: xoo, bar: xoo},
 		},
 		"common error": {
-			err:  New("some error without kind"),
-			want: UnknownKind,
+			err:    New("some error without kind"),
+			want:   UnknownKind,
+			orWant: map[Kind]Kind{foo: UnknownKind, bar: UnknownKind},
 		},
 		"common error with kind": {
-			err:  WithKind(New("bar"), "foo"),
-			want: Kind("foo"),
+			err:    WithKind(New("bar"), baz),
+			want:   baz,
+			orWant: map[Kind]Kind{foo: baz, bar: baz},
 		},
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			assert.Exactly(t, tc.want, GetKind(tc.err))
+			assert.Exactly(t, tc.want, GetKindOr(tc.err, UnknownKind))
+
+			for or, want := range tc.orWant {
+				t.Run("", func(t *testing.T) {
+					assert.Exactly(t, want, GetKindOr(tc.err, or))
+				})
+			}
 		})
 	}
 }

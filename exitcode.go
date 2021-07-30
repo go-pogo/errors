@@ -4,11 +4,15 @@
 
 package errors
 
+// ExitCoder interfaces provide access to an exit code.
 type ExitCoder interface {
 	error
 	ExitCode() int
 }
 
+// WithExitCode adds an exit status code to the error which may indicate a
+// fatal error. The exit code can be supplied to os.Exit to terminate the
+// program immediately.
 func WithExitCode(parent error, exitCode int) ExitCoder {
 	if parent == nil {
 		return nil
@@ -31,12 +35,17 @@ func WithExitCode(parent error, exitCode int) ExitCoder {
 	}
 }
 
-func GetExitCode(err error) int {
+// GetExitCode returns an exit status code if the error implements the
+// ExitCoder interface. If not, it returns 0.
+func GetExitCode(err error) int { return GetExitCodeOr(err, 0) }
+
+// GetExitCodeOr returns an exit status code if the error implements the
+// ExitCoder interface. If not, it returns the provided value or.
+func GetExitCodeOr(err error, or int) int {
 	if e, ok := err.(ExitCoder); ok {
 		return e.ExitCode()
 	}
-
-	return 0
+	return or
 }
 
 type exitCodeErr struct {
