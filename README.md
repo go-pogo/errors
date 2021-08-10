@@ -9,7 +9,7 @@ errors
 
 [latest-release-url]: https://github.com/go-pogo/errors/releases
 
-[build-status-img]: https://github.com/go-pogo/errors/workflows/Go/badge.svg
+[build-status-img]: https://github.com/go-pogo/errors/workflows/Test/badge.svg
 
 [build-status-url]: https://github.com/go-pogo/errors/actions?query=workflow%3ATest
 
