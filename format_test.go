@@ -60,29 +60,23 @@ func TestFormatError(t *testing.T) {
 		traceLines []int
 	}{
 		"error": {
-			setup:      func() error { return New("some err") },
-			traceLines: traceHelper(-1, 1),
+			setup: func() error { return New("some err") },
 		},
 		"traced primitive": {
-			setup: func() error {
-				return Trace(stderrors.New("primitive"))
-			},
-			traceLines: traceHelper(-2, 1),
+			setup:      func() error { return Trace(stderrors.New("primitive")) },
+			traceLines: traceHelper(-1, 1),
 		},
 		"traced error": {
-			setup: func() error {
-				err := New("another err")
-				return Trace(err)
-			},
-			traceLines: traceHelper(-3, 2),
+			setup:      func() error { return Trace(New("another err")) },
+			traceLines: traceHelper(-1, 1),
 		},
 		"multi error": {
 			setup: func() error {
 				err1 := New("err1")
-				err2 := New("err2")
+				err2 := Trace(New("err2"))
 				return Trace(Combine(err1, err2))
 			},
-			traceLines: traceHelper(-4, 3),
+			traceLines: traceHelper(-3, 2),
 		},
 	}
 

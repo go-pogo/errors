@@ -17,18 +17,14 @@ import (
 // text. Each call to New returns a distinct error value even if the text is
 // identical.
 func New(text string) error {
-	err := toCommonErr(stderrors.New(text), false)
-	err.Trace(1)
-	return err
+	return toCommonErr(stderrors.New(text), false)
 }
 
 // Newf formats an error message according to a format specifier and provided
 // arguments and creates a new error the same way New does. It serves as an
 // alternative to fmt.Errorf.
 func Newf(format string, a ...interface{}) error {
-	err := toCommonErr(fmt.Errorf(format, a...), false)
-	err.Trace(1)
-	return err
+	return toCommonErr(fmt.Errorf(format, a...), false)
 }
 
 // An UpgradedError is capable of returning its original error.
@@ -38,7 +34,7 @@ type UpgradedError interface {
 	Original() (original error)
 }
 
-// Original returns the Original error if err is an UpgradedError. Otherwise it
+// Original returns the Original error if err is an UpgradedError. Otherwise, it
 // will return the given error err.
 func Original(err error) error {
 	p, ok := err.(UpgradedError)
@@ -144,9 +140,13 @@ func errMsg(msg string, kind Kind, code int) string {
 
 	var buf strings.Builder
 	if hasKind {
-		buf.WriteString(kind.String())
-		buf.WriteRune(':')
-		buf.WriteRune(' ')
+		if msg == "" {
+			msg = kind.String()
+		} else {
+			buf.WriteString(kind.String())
+			buf.WriteRune(':')
+			buf.WriteRune(' ')
+		}
 	}
 	if hasCode {
 		buf.WriteRune('[')

@@ -20,13 +20,17 @@ func TestTrace(t *testing.T) {
 		err     error
 		wantLen int
 	}{
-		"with error": {
-			err:     New(""),
-			wantLen: 2,
-		},
 		"with primitive": {
 			err:     stderrors.New(""),
 			wantLen: 1,
+		},
+		"with error": {
+			err:     New(""),
+			wantLen: 1,
+		},
+		"with traced error": {
+			err:     Trace(New("")),
+			wantLen: 2,
 		},
 	}
 
@@ -41,6 +45,11 @@ func TestTrace(t *testing.T) {
 func TestGetFrames(t *testing.T) {
 	t.Run("with error", func(t *testing.T) {
 		f := *GetStackFrames(New(""))
+		assert.Len(t, f, 0)
+		assert.NotContains(t, f.String(), "trace_test.go:")
+	})
+	t.Run("with traced error", func(t *testing.T) {
+		f := *GetStackFrames(Trace(New("")))
 		assert.Len(t, f, 1)
 		assert.Contains(t, f.String(), "trace_test.go:")
 	})
