@@ -113,5 +113,5 @@ func Is(err, target error) bool {
 // error, or to any interface type. As returns false if err is nil.
 func As(err error, target interface{}) bool {
 	//goland:noinspection GoErrorsAs
-	return stderrors.As(err, target)
+	return err != nil && stderrors.As(err, target)
 }
