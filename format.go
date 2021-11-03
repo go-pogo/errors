@@ -45,6 +45,8 @@ func FormatError(err error, state fmt.State, verb rune) {
 	xerrors.FormatError(f, state, verb)
 }
 
+// PrintError prints the error err with the provided xerrors.Printer and
+// additionally formats and prints the error's stack frames.
 func PrintError(printer xerrors.Printer, err error) {
 	printer.Print(err.Error())
 	if !printer.Detail() {

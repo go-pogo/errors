@@ -110,7 +110,7 @@ func (ce *commonErr) As(target interface{}) bool {
 }
 
 // Unwrap returns the next error in the error chain. It returns nil if there
-// is no next error.
+// is not a next error.
 func (ce *commonErr) Unwrap() error {
 	if ce.cause != nil {
 		return ce.cause

@@ -134,7 +134,7 @@ func TestUpgrade(t *testing.T) {
 func TestCommonErr_GoString(t *testing.T) {
 	msg := "just some error message"
 	assert.Equal(t,
-		fmt.Sprintf("&\"%s\".commonErr{error:%#v}", fullPkgName, stderrors.New(msg)),
+		fmt.Sprintf("&\"%s\".commonErr{error:%#v}", pkgImportPath, stderrors.New(msg)),
 		fmt.Sprintf("%#v", New(msg)),
 	)
 }
