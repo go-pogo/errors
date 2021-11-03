@@ -7,7 +7,9 @@ package errors
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
+	"sync"
 
 	"golang.org/x/xerrors"
 )
@@ -45,11 +47,11 @@ func FormatError(err error, state fmt.State, verb rune) {
 
 func PrintError(printer xerrors.Printer, err error) {
 	printer.Print(err.Error())
-	if printer.Detail() {
-		frames := GetStackFrames(err)
-		if frames != nil {
-			frames.Format(printer)
-		}
+	if !printer.Detail() {
+		return
+	}
+	if frames := GetStackFrames(err); frames != nil {
+		frames.Format(printer)
 	}
 }
 
@@ -72,7 +74,47 @@ func (e *formatterErr) GoString() string {
 	return goString(e, e.error)
 }
 
-const fullPkgName = "github.com/go-pogo/errors"
+var bufPool = sync.Pool{
+	New: func() interface{} {
+		return new(strings.Builder)
+	},
+}
+
+func releaseBuf(buf *strings.Builder) {
+	buf.Reset()
+	bufPool.Put(buf)
+}
+
+func errMsg(msg string, kind Kind, code int) string {
+	hasKind, hasCode := kind != UnknownKind, code != 0
+	if !hasKind && !hasCode {
+		return msg
+	}
+
+	buf := bufPool.Get().(*strings.Builder)
+	defer releaseBuf(buf)
+
+	if hasKind {
+		if msg == "" {
+			msg = kind.String()
+		} else {
+			buf.WriteString(kind.String())
+			buf.WriteRune(':')
+			buf.WriteRune(' ')
+		}
+	}
+	if hasCode {
+		buf.WriteRune('[')
+		buf.WriteString(strconv.Itoa(code))
+		buf.WriteRune(']')
+		buf.WriteRune(' ')
+	}
+
+	buf.WriteString(msg)
+	return buf.String()
+}
+
+const pkgImportPath = "github.com/go-pogo/errors"
 
 func goString(err, parent error) string {
 	typ := reflect.TypeOf(err)
@@ -80,11 +122,13 @@ func goString(err, parent error) string {
 		typ = typ.Elem()
 	}
 
-	var buf strings.Builder
-	_, _ = fmt.Fprintf(&buf, "&\"%s\".%s", fullPkgName, typ.Name())
+	buf := bufPool.Get().(*strings.Builder)
+	defer releaseBuf(buf)
+
+	_, _ = fmt.Fprintf(buf, "&\"%s\".%s", pkgImportPath, typ.Name())
 
 	if parent != nil {
-		_, _ = fmt.Fprintf(&buf, "{error:%#v}", parent)
+		_, _ = fmt.Fprintf(buf, "{error:%#v}", parent)
 	} else {
 		buf.WriteString("{}")
 	}

@@ -7,8 +7,6 @@ package errors
 import (
 	stderrors "errors"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"golang.org/x/xerrors"
 )
@@ -130,31 +128,4 @@ func (ce *commonErr) Error() string {
 // GoString prints a basic error syntax.
 func (ce *commonErr) GoString() string {
 	return goString(ce, ce.error)
-}
-
-func errMsg(msg string, kind Kind, code int) string {
-	hasKind, hasCode := kind != UnknownKind, code != 0
-	if !hasKind && !hasCode {
-		return msg
-	}
-
-	var buf strings.Builder
-	if hasKind {
-		if msg == "" {
-			msg = kind.String()
-		} else {
-			buf.WriteString(kind.String())
-			buf.WriteRune(':')
-			buf.WriteRune(' ')
-		}
-	}
-	if hasCode {
-		buf.WriteRune('[')
-		buf.WriteString(strconv.Itoa(code))
-		buf.WriteRune(']')
-		buf.WriteRune(' ')
-	}
-
-	buf.WriteString(msg)
-	return buf.String()
 }
