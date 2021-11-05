@@ -7,7 +7,6 @@ package errors
 import (
 	"testing"
 
-	"github.com/go-pogo/errors/internal"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -55,8 +54,8 @@ func TestMust(t *testing.T) {
 }
 
 func TestCatchPanic(t *testing.T) {
-	internal.DisableCaptureFrames()
-	defer internal.EnableCaptureFrames()
+	disableCaptureFrames()
+	defer enableCaptureFrames()
 
 	t.Run("panic string", func(t *testing.T) {
 		var want error

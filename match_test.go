@@ -14,8 +14,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/go-pogo/errors/internal"
 )
 
 func assertErrorIs(t *testing.T, err, target error) bool {
@@ -128,8 +126,8 @@ type customError struct{}
 func (ce *customError) Error() string { return "this is a custom error" }
 
 func TestAs(t *testing.T) {
-	internal.DisableCaptureFrames()
-	defer internal.EnableCaptureFrames()
+	disableCaptureFrames()
+	defer enableCaptureFrames()
 
 	var kinder Kinder
 	var customErr *customError

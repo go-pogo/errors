@@ -11,13 +11,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/xerrors"
-
-	"github.com/go-pogo/errors/internal"
 )
 
 func TestSameErrors(t *testing.T) {
-	internal.DisableCaptureFrames()
-	defer internal.EnableCaptureFrames()
+	disableCaptureFrames()
+	defer enableCaptureFrames()
 
 	cause := xerrors.New("cause of error")
 	tests := map[string]map[string][2]error{

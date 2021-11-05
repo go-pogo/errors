@@ -10,13 +10,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/go-pogo/errors/internal"
 )
 
 func TestWrapWrapf(t *testing.T) {
-	internal.DisableCaptureFrames()
-	defer internal.EnableCaptureFrames()
+	disableCaptureFrames()
+	defer enableCaptureFrames()
 
 	tests := map[string]struct {
 		message string
