@@ -60,7 +60,7 @@ func TestCatchPanic(t *testing.T) {
 	t.Run("panic string", func(t *testing.T) {
 		var want error
 		defer func() {
-			assert.Equal(t, upgrade(&panicErr{"paniek!"}), want)
+			assert.Equal(t, newErr(&panicErr{"paniek!"}, 0), want)
 		}()
 		defer CatchPanic(&want)
 		panic("paniek!")
