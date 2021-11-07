@@ -129,7 +129,7 @@ func TestAs(t *testing.T) {
 	disableCaptureFrames()
 	defer enableCaptureFrames()
 
-	var kinder Kinder
+	var kindErr KindGetter
 	var customErr *customError
 	var pathErrPtr *os.PathError
 	_, pathErr := os.Open("non-existing")
@@ -141,22 +141,22 @@ func TestAs(t *testing.T) {
 	}{
 		"commonErr with kind": {
 			error:  WithKind(New("err with kind"), "foobar"),
-			target: &kinder,
+			target: &kindErr,
 			wantFn: func(err error) interface{} {
-				ce := toCommonErr(stderrors.New("err with kind"), false)
+				ce := newErr(stderrors.New("err with kind"), 0)
 				ce.kind = "foobar"
 				return ce
 			},
 		},
-		"upgraded os.PathError": {
-			error:  Upgrade(pathErr),
+		"traced os.PathError": {
+			error:  Trace(pathErr),
 			target: &pathErrPtr,
 			wantFn: func(err error) interface{} {
 				return pathErr
 			},
 		},
-		"upgraded custom error": {
-			error:  Upgrade(&customError{}),
+		"traced custom error": {
+			error:  Trace(&customError{}),
 			target: &customErr,
 			wantFn: func(err error) interface{} {
 				return &customError{}

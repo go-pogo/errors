@@ -2,6 +2,9 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build !notrace
+// +build !notrace
+
 package errors
 
 import (
@@ -37,13 +40,13 @@ func TestWithFormatter(t *testing.T) {
 		have := WithFormatter(rootCause)
 
 		t.Run("set", func(t *testing.T) {
-			want := toCommonErr(Original(rootCause), true)
+			want := upgrade(Original(rootCause))
 			assertErrorIs(t, have, rootCause)
 			assert.Exactly(t, want, have)
 		})
 		t.Run("overwrite", func(t *testing.T) {
 			have = WithFormatter(have)
-			want := toCommonErr(Original(rootCause), true)
+			want := upgrade(Original(rootCause))
 			assertErrorIs(t, have, rootCause)
 			assert.Exactly(t, want, have)
 		})

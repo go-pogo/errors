@@ -14,7 +14,7 @@ import (
 	"golang.org/x/xerrors"
 )
 
-// WithFormatter wraps the error with an UpgradedError that is capable of basic
+// WithFormatter wraps the error with an OriginalGetter that is capable of basic
 // error formatting, but only if it is not already wrapped.
 func WithFormatter(parent error) xerrors.Formatter {
 	if parent == nil {
@@ -25,17 +25,17 @@ func WithFormatter(parent error) xerrors.Formatter {
 	case *formatterErr:
 		return e
 
-	case UpgradedError:
-		return toCommonErr(parent, true)
+	case OriginalGetter:
+		return upgrade(parent)
 	}
 
 	return &formatterErr{error: parent}
 }
 
-// FormatError calls the FormatError method of err with an xerrors.Printer
+// FormatError calls the FormatError method of err with a xerrors.Printer
 // configured according to state and verb, and writes the result to state.
-// If err is not an xerrors.Formatter it will wrap the error with an
-// UpgradedError that is capable of basic error formatting using WithFormatter.
+// If err is not a xerrors.Formatter it will wrap err so it is capable of
+// basic error formatting using WithFormatter.
 func FormatError(err error, state fmt.State, verb rune) {
 	f, ok := err.(xerrors.Formatter)
 	if !ok {
@@ -57,12 +57,19 @@ func PrintError(printer xerrors.Printer, err error) {
 	}
 }
 
+// Format formats the captured frames using a xerrors.Printer.
+func (fr Frames) Format(p xerrors.Printer) {
+	for i := len(fr) - 1; i >= 0; i-- {
+		fr[i].Format(p)
+	}
+}
+
 type formatterErr struct{ error }
 
 func (e *formatterErr) Original() error { return e.error }
 
 // Format formats the error using FormatError.
-func (e *formatterErr) Format(s fmt.State, v rune) { FormatError(e, s, v) }
+func (e *formatterErr) Format(s fmt.State, v rune) { xerrors.FormatError(e, s, v) }
 
 // FormatError prints the error to the xerrors.Printer using PrintError and
 // returns the next error in the error chain, if any.

@@ -11,6 +11,11 @@ import (
 	"golang.org/x/xerrors"
 )
 
+type MultiError interface {
+	error
+	Errors() []error
+}
+
 // Filter returns a slice of errors without nil values in between them. It
 // returns the slice with the length of the amount of non-nil errors but keeps
 // its original capacity.
@@ -44,7 +49,7 @@ func combine(errors []error) error {
 		return errors[0]
 	}
 
-	return newMultiErr(errors)
+	return newMultiErr(errors, 2)
 }
 
 const panicAppendNilPtr = "errors.Append: dest must not be a nil pointer"
@@ -52,7 +57,7 @@ const panicAppendNilPtr = "errors.Append: dest must not be a nil pointer"
 // Append appends multiple non-nil errors to a single multi error dest.
 //
 // Important: when using Append with defer, the pointer to the dest error
-// must be a named return variable. For addition details see
+// must be a named return variable. For additional details see
 // https://golang.org/ref/spec#Defer_statements.
 func Append(dest *error, errs ...error) {
 	if dest == nil {
@@ -69,36 +74,41 @@ func Append(dest *error, errs ...error) {
 			*dest = err
 
 		case *multiErr:
-			d.errors = append(d.errors, err)
+			d.append(err)
 
 		default:
-			m := newMultiErr([]error{*dest, err})
-			m.Trace(1)
-			*dest = m
+			*dest = newMultiErr([]error{*dest, err}, 1)
 		}
 	}
 }
 
-type MultiError interface {
-	error
-	Errors() []error
-}
-
 type multiErr struct {
-	tracer
-	errors   []error
-	exitCode int
+	commonErr
+	errors []error
 }
 
-func newMultiErr(errors []error) *multiErr {
-	return &multiErr{
-		errors: errors,
+func newMultiErr(errors []error, trace uint) *multiErr {
+	if trace < 1 {
+		return &multiErr{errors: errors}
 	}
+
+	m := &multiErr{errors: make([]error, 0, len(errors))}
+	m.Trace(trace + 1)
+	for _, err := range errors {
+		m.append(err)
+	}
+	return m
+}
+
+func (m *multiErr) append(err error) {
+	if fr := GetStackFrames(err); fr != nil {
+		*fr = []xerrors.Frame(*fr)[:len(m.commonErr.frames)]
+	}
+	m.errors = append(m.errors, err)
 }
 
 // Errors returns the errors within the multi error.
 func (m *multiErr) Errors() []error { return m.errors }
-func (m *multiErr) ExitCode() int   { return m.exitCode }
 
 func (m *multiErr) Is(target error) bool {
 	for _, err := range m.errors {
@@ -109,8 +119,10 @@ func (m *multiErr) Is(target error) bool {
 	return false
 }
 
-// Format formats the error using FormatError.
-func (m *multiErr) Format(s fmt.State, v rune) { FormatError(m, s, v) }
+// Format uses xerrors.FormatError to call the FormatError method of the error
+// with a xerrors.Printer configured according to s and v, and writes the
+// result to s.
+func (m *multiErr) Format(s fmt.State, v rune) { xerrors.FormatError(m, s, v) }
 
 // FormatError prints a summary of the encountered errors to p.
 func (m *multiErr) FormatError(p xerrors.Printer) error {
@@ -128,12 +140,14 @@ func (m *multiErr) FormatError(p xerrors.Printer) error {
 }
 
 func (m *multiErr) Error() string {
-	var buf strings.Builder
+	buf := bufPool.Get().(*strings.Builder)
+	defer releaseBuf(buf)
+
 	buf.WriteString("multiple errors occurred:")
 
 	l := len(m.errors)
 	for i, e := range m.errors {
-		_, _ = fmt.Fprintf(&buf, "\n[%d/%d] %s", i+1, l, e.Error())
+		_, _ = fmt.Fprintf(buf, "\n[%d/%d] %s", i+1, l, e.Error())
 		if i < l-1 {
 			buf.WriteRune(';')
 		}

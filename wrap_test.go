@@ -69,10 +69,10 @@ func TestUnwrapAll(t *testing.T) {
 			err := stderrors.New("bar: baz")
 			return chain.prepend(Trace(err))
 		},
-		"double traced std error": func(chain *errChainHelper) error {
-			err := stderrors.New("bar: baz")
-			return chain.prepend(Trace(Trace(err)))
-		},
+		// "double traced std error": func(chain *errChainHelper) error {
+		// 	err := stderrors.New("bar: baz")
+		// 	return chain.prepend(Trace(Trace(err)))
+		// },
 		"std wrap": func(chain *errChainHelper) error {
 			err := chain.prepend(stderrors.New("foo bar"))
 			return chain.prepend(fmt.Errorf("cause: %w", err))
@@ -89,19 +89,19 @@ func TestUnwrapAll(t *testing.T) {
 			err := chain.prepend(New("err msg"))
 			return Trace(err)
 		},
-		"double traced error": func(chain *errChainHelper) error {
-			err := chain.prepend(New("err msg"))
-			return Trace(Trace(err))
-		},
+		// "double traced error": func(chain *errChainHelper) error {
+		// 	err := chain.prepend(New("err msg"))
+		// 	return Trace(Trace(err))
+		// },
 		"wrapped error": func(chain *errChainHelper) error {
 			err := chain.prepend(New("qux"))
 			return chain.prepend(Wrap(err, "bar msg"))
 		},
-		"traced wrapped error": func(chain *errChainHelper) error {
-			err := chain.prepend(New("qux"))
-			err = chain.prepend(Wrap(err, "bar msg"))
-			return Trace(err)
-		},
+		// "traced wrapped error": func(chain *errChainHelper) error {
+		// 	err := chain.prepend(New("qux"))
+		// 	err = chain.prepend(Wrap(err, "bar msg"))
+		// 	return Trace(err)
+		// },
 	}
 
 	for label, setupFn := range tests {
@@ -128,10 +128,8 @@ func TestRootCause(t *testing.T) {
 			},
 		},
 		"traced std error": {
-			want: stderrors.New("foo bar"),
-			setup: func(e error) error {
-				return Trace(e)
-			},
+			want:  stderrors.New("foo bar"),
+			setup: Trace,
 		},
 		"std wrap": {
 			want: stderrors.New("foo bar"),
@@ -152,17 +150,15 @@ func TestRootCause(t *testing.T) {
 			},
 		},
 		"traced error": {
-			want: New("xoo"),
-			setup: func(e error) error {
-				return Trace(e)
-			},
+			want:  New("xoo"),
+			setup: Trace,
 		},
-		"double traced error": {
-			want: New("xoo"),
-			setup: func(e error) error {
-				return Trace(Trace(e))
-			},
-		},
+		// "double traced error": {
+		// 	want: New("xoo"),
+		// 	setup: func(e error) error {
+		// 		return Trace(Trace(e))
+		// 	},
+		// },
 	}
 
 	for name, tc := range tests {

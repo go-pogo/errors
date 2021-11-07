@@ -42,7 +42,7 @@ func TestWithExitCode(t *testing.T) {
 		have := WithExitCode(rootCause, 23)
 
 		t.Run("set", func(t *testing.T) {
-			want := toCommonErr(Original(rootCause), true)
+			want := upgrade(Original(rootCause))
 			want.exitCode = 23
 
 			assertErrorIs(t, have, rootCause)
@@ -51,7 +51,7 @@ func TestWithExitCode(t *testing.T) {
 		})
 		t.Run("overwrite", func(t *testing.T) {
 			have = WithExitCode(have, 45)
-			want := toCommonErr(Original(rootCause), true)
+			want := upgrade(Original(rootCause))
 			want.exitCode = 45
 
 			assertErrorIs(t, have, rootCause)

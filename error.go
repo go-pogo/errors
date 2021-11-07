@@ -15,58 +15,49 @@ import (
 // text. Each call to New returns a distinct error value even if the text is
 // identical.
 func New(text string) error {
-	return toCommonErr(stderrors.New(text), false)
+	return newErr(stderrors.New(text), 1)
 }
 
 // Newf formats an error message according to a format specifier and provided
 // arguments and creates a new error the same way New does. It serves as an
 // alternative to fmt.Errorf.
 func Newf(format string, a ...interface{}) error {
-	return toCommonErr(fmt.Errorf(format, a...), false)
+	return newErr(fmt.Errorf(format, a...), 1)
 }
 
-// An UpgradedError is capable of returning its original error.
-type UpgradedError interface {
+// An OriginalGetter is capable of returning its original error.
+type OriginalGetter interface {
 	error
-	// Original returns the Original error that resides in the UpgradedError.
+	// Original returns the original error that resides in the OriginalGetter.
 	Original() (original error)
 }
 
-// Original returns the Original error if err is an UpgradedError. Otherwise, it
+// Original returns the Original error if err is an OriginalGetter. Otherwise, it
 // will return the given error err.
 func Original(err error) error {
-	p, ok := err.(UpgradedError)
-	if !ok {
+	if p, ok := err.(OriginalGetter); ok {
+		return p.Original()
+	} else {
 		return err
 	}
-
-	return p.Original()
 }
 
-// Upgrade upgrades the given standard error by wrapping it with an
-// UpgradedError that can record stack frames and has basic error formatting.
-// The original parent error can always be retrieved by calling Original on
-// the result of Upgrade. Thus
-//
-//   Original(Upgrade(err)) == err
-//
-// equals true.
-func Upgrade(parent error) error {
-	return toCommonErr(parent, true)
+type Frames []xerrors.Frame
+
+// StackTracer interfaces provide access to a stack of traced Frames.
+type StackTracer interface {
+	error
+
+	// StackFrames returns a slice of captured xerrors.Frame types associated
+	// with the error.
+	StackFrames() *Frames
+	// Trace captures a xerrors.Frame that describes a frame on the caller's
+	// stack. The argument skipFrames is the number of frames to skip over.
+	Trace(skipFrames uint)
 }
 
-// toCommonErr upgrades the parent error by wrapping it with a commonErr.
-func toCommonErr(parent error, upgrade bool) *commonErr {
-	if e, ok := parent.(*commonErr); ok {
-		return e
-	}
-
-	return &commonErr{
-		error:    Original(parent),
-		upgrade:  upgrade,
-		kind:     GetKind(parent),
-		exitCode: GetExitCode(parent),
-	}
+type tracer struct {
+	frames Frames
 }
 
 type commonErr struct {
@@ -79,6 +70,41 @@ type commonErr struct {
 	cause    error // cause of this error, if any
 	kind     Kind
 	exitCode int
+}
+
+func newErr(parent error, trace uint) *commonErr {
+	ce := &commonErr{
+		error:    parent,
+		kind:     GetKind(parent),
+		exitCode: GetExitCode(parent),
+	}
+	if trace > 0 {
+		ce.Trace(trace + 1)
+	}
+	return ce
+}
+
+// upgrade upgrades the parent error by wrapping it with a commonErr.
+func upgrade(parent error) *commonErr {
+	if e, ok := parent.(*commonErr); ok {
+		return e
+	}
+
+	return &commonErr{
+		error:    Original(parent),
+		upgrade:  true,
+		kind:     GetKind(parent),
+		exitCode: GetExitCode(parent),
+	}
+}
+
+func withCause(ce *commonErr, cause error) *commonErr {
+	if fr := GetStackFrames(cause); fr != nil {
+		*fr = []xerrors.Frame(*fr)[:len(ce.frames)]
+	}
+
+	ce.cause = cause
+	return ce
 }
 
 // Original returns the original error before it was upgraded. This is never the
@@ -94,8 +120,10 @@ func (ce *commonErr) Kind() Kind { return ce.kind }
 
 func (ce *commonErr) ExitCode() int { return ce.exitCode }
 
-// Format formats the error using FormatError.
-func (ce *commonErr) Format(s fmt.State, v rune) { FormatError(ce, s, v) }
+// Format uses xerrors.FormatError to call the FormatError method of the error
+// with a xerrors.Printer configured according to s and v, and writes the
+// result to s.
+func (ce *commonErr) Format(s fmt.State, v rune) { xerrors.FormatError(ce, s, v) }
 
 // FormatError prints the error to the xerrors.Printer using PrintError and
 // returns the next error in the error chain, if any.

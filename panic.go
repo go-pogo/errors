@@ -37,13 +37,11 @@ func Must(args ...interface{}) {
 func CatchPanic(dest *error) {
 	if r := recover(); r != nil {
 		if err, ok := r.(error); ok {
-			Append(dest, err)
+			Append(dest, Trace(err))
 			return
 		}
 
-		ce := toCommonErr(&panicErr{v: r}, true)
-		ce.Trace(2)
-		Append(dest, ce)
+		Append(dest, newErr(&panicErr{v: r}, 0))
 	}
 }
 

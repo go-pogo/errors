@@ -2,10 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build !notrace
+// +build !notrace
+
 package errors
 
 import (
 	stderrors "errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,36 +28,43 @@ func TestTrace(t *testing.T) {
 			err:     stderrors.New(""),
 			wantLen: 1,
 		},
+		"with traced primitive": {
+			err:     Trace(stderrors.New("")),
+			wantLen: 2,
+		},
 		"with error": {
 			err:     New(""),
-			wantLen: 1,
+			wantLen: 2,
 		},
 		"with traced error": {
 			err:     Trace(New("")),
-			wantLen: 2,
+			wantLen: 3,
 		},
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			err := Trace(tc.err).(StackTracer)
-			assert.Len(t, *err.StackFrames(), tc.wantLen)
+			if !assert.Len(t, *err.StackFrames(), tc.wantLen) {
+				fmt.Printf("\n%+v\n", err)
+			}
 		})
 	}
 }
 
-func TestGetFrames(t *testing.T) {
-	t.Run("with error", func(t *testing.T) {
-		f := *GetStackFrames(New(""))
-		assert.Len(t, f, 0)
-		assert.NotContains(t, f.String(), "trace_test.go:")
-	})
-	t.Run("with traced error", func(t *testing.T) {
-		f := *GetStackFrames(Trace(New("")))
-		assert.Len(t, f, 1)
-		assert.Contains(t, f.String(), "trace_test.go:")
-	})
+func TestGetStackFrames(t *testing.T) {
 	t.Run("with nil", func(t *testing.T) {
 		assert.Nil(t, GetStackFrames(nil))
+	})
+
+	t.Run("with error", func(t *testing.T) {
+		f := GetStackFrames(New(""))
+		assert.Len(t, *f, 1)
+		assert.Contains(t, f.String(), "trace_test.go:")
+	})
+	t.Run("with traced error", func(t *testing.T) {
+		f := GetStackFrames(Trace(New("")))
+		assert.Len(t, *f, 2)
+		assert.Contains(t, f.String(), "trace_test.go:")
 	})
 }

@@ -17,26 +17,25 @@ type Kind string
 // String returns the string representation of Kind.
 func (k Kind) String() string { return string(k) }
 
-// Kinder interfaces provide access to a Kind.
-type Kinder interface {
+// KindGetter interfaces provide access to a Kind.
+type KindGetter interface {
 	error
 	Kind() Kind
 }
 
 // WithKind adds Kind to the error.
-func WithKind(parent error, kind Kind) Kinder {
+func WithKind(parent error, kind Kind) KindGetter {
 	if parent == nil {
 		return nil
 	}
 
-	switch e := parent.(type) {
-	case *kindErr:
-		e.kind = kind
+	if e, ok := parent.(kindGetterSetter); ok {
+		e.setKind(kind)
 		return e
-
-	case UpgradedError:
-		ce := toCommonErr(parent, true)
-		ce.kind = kind
+	}
+	if _, ok := parent.(OriginalGetter); ok {
+		ce := upgrade(parent)
+		ce.setKind(kind)
 		return ce
 	}
 
@@ -46,23 +45,31 @@ func WithKind(parent error, kind Kind) Kinder {
 	}
 }
 
-// GetKind returns the Kind of the error if it implements the Kinder
+// GetKind returns the Kind of the error if it implements the KindGetter
 // interface. If not, it returns UnknownKind.
 func GetKind(err error) Kind { return GetKindOr(err, UnknownKind) }
 
-// GetKindOr returns the Kind of the error if it implements the Kinder
+// GetKindOr returns the Kind of the error if it implements the KindGetter
 // interface. If not, it returns the provided value or.
 func GetKindOr(err error, or Kind) Kind {
-	if e, ok := err.(Kinder); ok {
+	if e, ok := err.(KindGetter); ok {
 		return e.Kind()
 	}
 	return or
+}
+
+type kindGetterSetter interface {
+	KindGetter
+	setKind(k Kind)
 }
 
 type kindErr struct {
 	error
 	kind Kind
 }
+
+func (ce *commonErr) setKind(k Kind) { ce.kind = k }
+func (e *kindErr) setKind(k Kind)    { e.kind = k }
 
 func (e *kindErr) Original() error { return e.error }
 func (e *kindErr) Kind() Kind      { return e.kind }

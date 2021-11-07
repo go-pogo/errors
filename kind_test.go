@@ -45,7 +45,7 @@ func TestWithKind(t *testing.T) {
 		have := WithKind(rootCause, kind1)
 
 		t.Run("set", func(t *testing.T) {
-			want := toCommonErr(Original(rootCause), true)
+			want := upgrade(Original(rootCause))
 			want.kind = kind1
 
 			assertErrorIs(t, have, rootCause)
@@ -54,7 +54,7 @@ func TestWithKind(t *testing.T) {
 		})
 		t.Run("overwrite", func(t *testing.T) {
 			have = WithKind(have, kind2)
-			want := toCommonErr(Original(rootCause), true)
+			want := upgrade(Original(rootCause))
 			want.kind = kind2
 
 			assertErrorIs(t, have, rootCause)
