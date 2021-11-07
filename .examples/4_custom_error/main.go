@@ -19,6 +19,8 @@ type customErr struct {
 	Value string
 }
 
+func (ce *customErr) Unwrap() error { return ce.Cause }
+
 func (ce *customErr) Error() string {
 	return fmt.Sprintf("just a custom error message with `%s`", ce.Value)
 }

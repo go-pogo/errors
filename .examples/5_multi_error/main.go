@@ -19,7 +19,7 @@ func unmarshal() (struct{}, error) {
 }
 
 func finish() error {
-	return stderrors.New("some error occurred while closing something")
+	return errors.Trace(stderrors.New("some error occurred while closing something"))
 }
 
 func someAction() (err error) {

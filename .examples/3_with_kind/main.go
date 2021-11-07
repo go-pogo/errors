@@ -17,8 +17,7 @@ func someAction() error {
 }
 
 func doSomething() error {
-	err := someAction()
-	return errors.Trace(err)
+	return someAction()
 }
 
 func main() {

@@ -18,6 +18,7 @@ func main() {
 		defer close(done)
 		defer errors.CatchPanic(&err)
 
+		err = errors.New("first error")
 		panic("something really bad happened")
 	}()
 
