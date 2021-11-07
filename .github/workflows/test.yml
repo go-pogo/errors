@@ -25,3 +25,6 @@ jobs:
 
       - name: Run tests
         run: go test -race -v
+
+      - name: Run tests with notrace
+        run: go test -tags notrace -race -v
