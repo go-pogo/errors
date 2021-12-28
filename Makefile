@@ -10,10 +10,10 @@ example1:
 	go run -race ./.examples/1_basic/main.go
 
 example2:
-	go run -race ./.examples/2_trace_existing/main.go
+	go run -race ./.examples/2_with_kind/main.go
 
 example3:
-	go run -race ./.examples/3_with_kind/main.go
+	go run -race ./.examples/3_with_stack/main.go
 
 example4:
 	go run -race ./.examples/4_custom_error/main.go

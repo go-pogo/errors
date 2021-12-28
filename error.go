@@ -5,155 +5,128 @@
 package errors
 
 import (
-	stderrors "errors"
 	"fmt"
 
 	"golang.org/x/xerrors"
 )
 
-// New is an alias of errors.New. It returns an error that formats as the given
-// text. Each call to New returns a distinct error value even if the text is
-// identical.
-func New(text string) error {
-	return newErr(stderrors.New(text), 1)
+// Msg is a string alias which can also be used as a basic error. This is
+// particularly useful for defining constants of known errors in your library
+// or application.
+//
+//    const ErrMyErrorMessage errors.Msg = "my error message"
+//    const ErrAnotherError   errors.Msg = "just another error"
+//
+// A new error can be constructed from any Msg with New and is considered to be
+// equal when comparing with Is.
+//
+//    err := errors.New(ErrMyErrorMessage)
+//    errors.Is(err, ErrMyErrorMessage) // true
+type Msg string
+
+// String returns the string representation of Kind.
+func (p Msg) String() string { return string(p) }
+
+func (p Msg) Error() string { return string(p) }
+
+const panicUseWithStackInstead = "errors.New: use errors.WithStack instead to wrap an error with an errors.StackTracer and xerrors.Formatter"
+
+// New creates a new error which implements the StackTracer, Wrapper and
+// xerrors.Formatter interfaces. Argument msg can be either a string or Msg.
+//
+//    err := errors.New("my error message")
+//    err := errors.New(errors.Msg("my error message"))
+//
+// Each call to New returns a distinct error value even if msg is identical.
+// Use WithStack to wrap an existing error with a StackTracer and
+// xerrors.Formatter.
+func New(msg interface{}) error {
+	if msg == nil {
+		return nil
+	}
+
+	switch v := msg.(type) {
+	case string:
+		return newCommonErr(Msg(v), true)
+	case *string:
+		return newCommonErr(Msg(*v), true)
+
+	case Msg:
+		return newCommonErr(v, true)
+	case *Msg:
+		return newCommonErr(*v, true)
+
+	case error:
+		panic(panicUseWithStackInstead)
+
+	default:
+		panic(fmt.Sprintf("errors.New: unsupported type `%T`", v))
+	}
 }
 
 // Newf formats an error message according to a format specifier and provided
-// arguments and creates a new error the same way New does. It serves as an
-// alternative to fmt.Errorf.
-func Newf(format string, a ...interface{}) error {
-	return newErr(fmt.Errorf(format, a...), 1)
+// arguments with fmt.Errorf, and creates a new error similar to New.
+//
+//    err := errors.Newf("my error %s", "message")
+//    err := errors.Newf("my error: %w", causingErr)
+func Newf(format string, args ...interface{}) error {
+	return withPossibleCause(newCommonErr(fmt.Errorf(format, args...), true))
 }
 
-// An OriginalGetter is capable of returning its original error.
-type OriginalGetter interface {
+type commonError struct {
 	error
-	// Original returns the original error that resides in the OriginalGetter.
-	Original() (original error)
+	cause error
+	stack *StackTrace
 }
 
-// Original returns the Original error if err is an OriginalGetter. Otherwise, it
-// will return the given error err.
-func Original(err error) error {
-	if p, ok := err.(OriginalGetter); ok {
-		return p.Original()
-	} else {
-		return err
-	}
-}
-
-type Frames []xerrors.Frame
-
-// StackTracer interfaces provide access to a stack of traced Frames.
-type StackTracer interface {
-	error
-
-	// StackFrames returns a slice of captured xerrors.Frame types associated
-	// with the error.
-	StackFrames() *Frames
-	// Trace captures a xerrors.Frame that describes a frame on the caller's
-	// stack. The argument skipFrames is the number of frames to skip over.
-	Trace(skipFrames uint)
-}
-
-type tracer struct {
-	frames Frames
-}
-
-type commonErr struct {
-	error
-	tracer
-
-	// upgrade indicates whether this commonErr is the original error (= false)
-	// or if the error in the error property is the original error (= true)
-	upgrade  bool
-	cause    error // cause of this error, if any
-	kind     Kind
-	exitCode int
-}
-
-func newErr(parent error, trace uint) *commonErr {
-	ce := &commonErr{
-		error:    parent,
-		kind:     GetKind(parent),
-		exitCode: GetExitCode(parent),
-	}
-	if trace > 0 {
-		ce.Trace(trace + 1)
+func newCommonErr(parent error, trace bool) *commonError {
+	ce := &commonError{error: parent}
+	if traceStack && trace {
+		ce.stack = newStackTrace(2)
 	}
 	return ce
 }
 
-// upgrade upgrades the parent error by wrapping it with a commonErr.
-func upgrade(parent error) *commonErr {
-	if e, ok := parent.(*commonErr); ok {
-		return e
-	}
-
-	return &commonErr{
-		error:    Original(parent),
-		upgrade:  true,
-		kind:     GetKind(parent),
-		exitCode: GetExitCode(parent),
-	}
-}
-
-func withCause(ce *commonErr, cause error) *commonErr {
-	if fr := GetStackFrames(cause); fr != nil {
-		*fr = []xerrors.Frame(*fr)[:len(ce.frames)]
-	}
-
+func withCause(ce *commonError, cause error) *commonError {
 	ce.cause = cause
-	return ce
-}
-
-// Original returns the original error before it was upgraded. This is never the
-// case for errors that were created with New, Newf, Wrap of Wrapf.
-func (ce *commonErr) Original() error {
-	if ce.upgrade {
-		return ce.error
+	if traceStack && ce.stack != nil {
+		skipStackTrace(cause, ce.stack.Len())
 	}
 	return ce
 }
 
-func (ce *commonErr) Kind() Kind { return ce.kind }
+func withPossibleCause(ce *commonError) *commonError {
+	if w, ok := ce.error.(xerrors.Wrapper); ok {
+		if cause := w.Unwrap(); cause != nil {
+			return withCause(ce, cause)
+		}
+	}
+	return ce
+}
 
-func (ce *commonErr) ExitCode() int { return ce.exitCode }
+func (ce *commonError) StackTrace() *StackTrace { return ce.stack }
+
+func (ce *commonError) Unwrap() error { return ce.cause }
 
 // Format uses xerrors.FormatError to call the FormatError method of the error
 // with a xerrors.Printer configured according to s and v, and writes the
 // result to s.
-func (ce *commonErr) Format(s fmt.State, v rune) { xerrors.FormatError(ce, s, v) }
+func (ce *commonError) Format(s fmt.State, v rune) {
+	xerrors.FormatError(ce, s, v)
+}
 
 // FormatError prints the error to the xerrors.Printer using PrintError and
 // returns the next error in the error chain, if any.
-func (ce *commonErr) FormatError(p xerrors.Printer) error {
+func (ce *commonError) FormatError(p xerrors.Printer) error {
 	PrintError(p, ce)
-	return ce.Unwrap()
+	return ce.cause
 }
 
-// todo: implement correct as method
-func (ce *commonErr) As(target interface{}) bool {
-	return As(ce.error, target)
-}
-
-// Unwrap returns the next error in the error chain. It returns nil if there
-// is not a next error.
-func (ce *commonErr) Unwrap() error {
-	if ce.cause != nil {
-		return ce.cause
-	}
-	if ce.upgrade {
-		return Unwrap(ce.error)
-	}
-	return nil
-}
-
-func (ce *commonErr) Error() string {
-	return errMsg(ce.error.Error(), ce.Kind(), ce.exitCode)
-}
-
-// GoString prints a basic error syntax.
-func (ce *commonErr) GoString() string {
-	return goString(ce, ce.error)
+// GoString prints the error in basic Go syntax.
+func (ce *commonError) GoString() string {
+	return fmt.Sprintf(
+		"*commonError{error: %#v, cause: %#v}",
+		ce.error,
+		ce.cause,
+	)
 }

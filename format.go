@@ -6,40 +6,37 @@ package errors
 
 import (
 	"fmt"
-	"reflect"
-	"strconv"
-	"strings"
-	"sync"
 
 	"golang.org/x/xerrors"
 )
 
-// WithFormatter wraps the error with an OriginalGetter that is capable of basic
-// error formatting, but only if it is not already wrapped.
-func WithFormatter(parent error) xerrors.Formatter {
-	if parent == nil {
+// WithFormatter wraps the error with a xerrors.Formatter that is capable of
+// basic error formatting. It returns the provided error as is if it already is
+// a xerrors.Formatter, or nil when err is nil.
+func WithFormatter(err error) xerrors.Formatter {
+	if err == nil {
 		return nil
 	}
 
-	switch e := parent.(type) {
-	case *formatterErr:
-		return e
-
-	case OriginalGetter:
-		return upgrade(parent)
+	if f, ok := err.(xerrors.Formatter); ok {
+		return f
 	}
 
-	return &formatterErr{error: parent}
+	return &embedError{error: err}
 }
 
 // FormatError calls the FormatError method of err with a xerrors.Printer
 // configured according to state and verb, and writes the result to state.
-// If err is not a xerrors.Formatter it will wrap err so it is capable of
-// basic error formatting using WithFormatter.
+// It will wrap err If err is not a xerrors.Formatter it will wrap err, so it
+// is capable of basic error formatting using WithFormatter.
 func FormatError(err error, state fmt.State, verb rune) {
+	if err == nil {
+		return
+	}
+
 	f, ok := err.(xerrors.Formatter)
 	if !ok {
-		f = &formatterErr{err}
+		f = &embedError{error: err}
 	}
 
 	xerrors.FormatError(f, state, verb)
@@ -48,99 +45,15 @@ func FormatError(err error, state fmt.State, verb rune) {
 // PrintError prints the error err with the provided xerrors.Printer and
 // additionally formats and prints the error's stack frames.
 func PrintError(printer xerrors.Printer, err error) {
+	if err == nil {
+		return
+	}
+
 	printer.Print(err.Error())
 	if !printer.Detail() {
 		return
 	}
-	if frames := GetStackFrames(err); frames != nil {
-		frames.Format(printer)
+	if stack := GetStackTrace(err); stack != nil {
+		stack.Format(printer)
 	}
-}
-
-// Format formats the captured frames using a xerrors.Printer.
-func (fr Frames) Format(p xerrors.Printer) {
-	for i := len(fr) - 1; i >= 0; i-- {
-		fr[i].Format(p)
-	}
-}
-
-type formatterErr struct{ error }
-
-func (e *formatterErr) Original() error { return e.error }
-
-// Format formats the error using FormatError.
-func (e *formatterErr) Format(s fmt.State, v rune) { xerrors.FormatError(e, s, v) }
-
-// FormatError prints the error to the xerrors.Printer using PrintError and
-// returns the next error in the error chain, if any.
-func (e *formatterErr) FormatError(p xerrors.Printer) error {
-	PrintError(p, e)
-	return Unwrap(e.error)
-}
-
-// GoString prints a basic error syntax.
-func (e *formatterErr) GoString() string {
-	return goString(e, e.error)
-}
-
-var bufPool = sync.Pool{
-	New: func() interface{} {
-		return new(strings.Builder)
-	},
-}
-
-func releaseBuf(buf *strings.Builder) {
-	buf.Reset()
-	bufPool.Put(buf)
-}
-
-func errMsg(msg string, kind Kind, code int) string {
-	hasKind, hasCode := kind != UnknownKind, code != 0
-	if !hasKind && !hasCode {
-		return msg
-	}
-
-	buf := bufPool.Get().(*strings.Builder)
-	defer releaseBuf(buf)
-
-	if hasKind {
-		if msg == "" {
-			msg = kind.String()
-		} else {
-			buf.WriteString(kind.String())
-			buf.WriteRune(':')
-			buf.WriteRune(' ')
-		}
-	}
-	if hasCode {
-		buf.WriteRune('[')
-		buf.WriteString(strconv.Itoa(code))
-		buf.WriteRune(']')
-		buf.WriteRune(' ')
-	}
-
-	buf.WriteString(msg)
-	return buf.String()
-}
-
-const pkgImportPath = "github.com/go-pogo/errors"
-
-func goString(err, parent error) string {
-	typ := reflect.TypeOf(err)
-	if typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
-	}
-
-	buf := bufPool.Get().(*strings.Builder)
-	defer releaseBuf(buf)
-
-	_, _ = fmt.Fprintf(buf, "&\"%s\".%s", pkgImportPath, typ.Name())
-
-	if parent != nil {
-		_, _ = fmt.Fprintf(buf, "{error:%#v}", parent)
-	} else {
-		buf.WriteString("{}")
-	}
-
-	return buf.String()
 }

@@ -6,65 +6,54 @@ package errors
 
 import (
 	stderrors "errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestWithKind(t *testing.T) {
-	kind1 := Kind("foobar")
-	kind2 := Kind("updated err")
+	tests := map[string]struct {
+		err  error
+		kind Kind
+	}{
+		"std error": {
+			err:  stderrors.New("root cause error"),
+			kind: "foo",
+		},
+		"wrapped std error with kind": {
+			err:  WithKind(stderrors.New("root cause error"), "foobar"),
+			kind: "qux xoo",
+		},
+		"std wrapped error": {
+			err:  fmt.Errorf("bar: %w", stderrors.New("absolute horror")),
+			kind: "baz",
+		},
+		"error": {
+			err:  New("just some err"),
+			kind: "whoops",
+		},
+		"wrapped error": {
+			err:  Wrap(New("just some err"), "some reason"),
+			kind: "some error",
+		},
+		"wrapped error with kind": {
+			err:  WithKind(New("just some err"), "who did this"),
+			kind: "whoops",
+		},
+	}
 
-	t.Run("std error", func(t *testing.T) {
-		rootCause := stderrors.New("root cause error")
-		have := WithKind(rootCause, kind1)
-
-		t.Run("add", func(t *testing.T) {
-			want := &kindErr{
-				error: rootCause,
-				kind:  kind1,
-			}
-			assertErrorIs(t, have, rootCause)
-			assert.Exactly(t, want, have)
-			assert.Exactly(t, want.kind, GetKind(have))
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			have := WithKind(tc.err, tc.kind)
+			assertErrorIs(t, have, tc.err)
+			assertErrorIs(t, have, tc.kind)
+			assert.Exactly(t, tc.kind, GetKind(have))
 		})
-		t.Run("overwrite", func(t *testing.T) {
-			have = WithKind(have, kind2)
-			want := &kindErr{
-				error: rootCause,
-				kind:  kind2,
-			}
-			assertErrorIs(t, have, rootCause)
-			assert.Exactly(t, want, have)
-			assert.Exactly(t, want.kind, GetKind(have))
-		})
-	})
-
-	t.Run("common error", func(t *testing.T) {
-		rootCause := New("root cause error")
-		have := WithKind(rootCause, kind1)
-
-		t.Run("set", func(t *testing.T) {
-			want := upgrade(Original(rootCause))
-			want.kind = kind1
-
-			assertErrorIs(t, have, rootCause)
-			assert.Exactly(t, want, have)
-			assert.Exactly(t, want.kind, GetKind(have))
-		})
-		t.Run("overwrite", func(t *testing.T) {
-			have = WithKind(have, kind2)
-			want := upgrade(Original(rootCause))
-			want.kind = kind2
-
-			assertErrorIs(t, have, rootCause)
-			assert.Exactly(t, want, have)
-			assert.Exactly(t, want.kind, GetKind(have))
-		})
-	})
+	}
 
 	t.Run("nil", func(t *testing.T) {
-		assert.Exactly(t, nil, WithKind(nil, "some kind"))
+		assert.Nil(t, WithKind(nil, "nope"))
 	})
 }
 
@@ -72,39 +61,33 @@ func TestGetKind(t *testing.T) {
 	const (
 		foo Kind = "foo"
 		bar Kind = "bar"
-		baz Kind = "baz"
-		xoo Kind = "xoo"
+		qux Kind = "qux"
 	)
 
 	tests := map[string]struct {
 		err    error
 		want   Kind
-		orWant map[Kind]Kind
+		orWant Kind
 	}{
-		"with nil": {
+		"nil": {
 			err:    nil,
-			want:   UnknownKind,
-			orWant: map[Kind]Kind{foo: foo, bar: bar},
+			orWant: foo,
 		},
 		"std error": {
 			err:    stderrors.New("std err"),
-			want:   UnknownKind,
-			orWant: map[Kind]Kind{foo: foo, bar: bar},
+			orWant: qux,
 		},
 		"std error with kind": {
-			err:    WithKind(stderrors.New("std err"), xoo),
-			want:   xoo,
-			orWant: map[Kind]Kind{foo: xoo, bar: xoo},
+			err:  WithKind(stderrors.New("std err"), foo),
+			want: foo,
 		},
-		"common error": {
+		"error": {
 			err:    New("some error without kind"),
-			want:   UnknownKind,
-			orWant: map[Kind]Kind{foo: UnknownKind, bar: UnknownKind},
+			orWant: bar,
 		},
-		"common error with kind": {
-			err:    WithKind(New("bar"), baz),
-			want:   baz,
-			orWant: map[Kind]Kind{foo: baz, bar: baz},
+		"error with kind": {
+			err:  WithKind(New("bar"), bar),
+			want: bar,
 		},
 	}
 
@@ -113,10 +96,8 @@ func TestGetKind(t *testing.T) {
 			assert.Exactly(t, tc.want, GetKind(tc.err))
 			assert.Exactly(t, tc.want, GetKindOr(tc.err, UnknownKind))
 
-			for or, want := range tc.orWant {
-				t.Run("", func(t *testing.T) {
-					assert.Exactly(t, want, GetKindOr(tc.err, or))
-				})
+			if tc.orWant != UnknownKind {
+				assert.Exactly(t, tc.orWant, GetKindOr(tc.err, tc.orWant))
 			}
 		})
 	}

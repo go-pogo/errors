@@ -12,8 +12,8 @@ import (
 )
 
 func TestWaitGroup_Go(t *testing.T) {
-	disableCaptureFrames()
-	defer enableCaptureFrames()
+	disableTraceStack()
+	defer enableTraceStack()
 
 	want := New("some err")
 	var wg WaitGroup
@@ -47,8 +47,8 @@ func TestWaitGroup_Wait(t *testing.T) {
 		assert.Nil(t, wg.Wait())
 	})
 	t.Run("error", func(t *testing.T) {
-		disableCaptureFrames()
-		defer enableCaptureFrames()
+		disableTraceStack()
+		defer enableTraceStack()
 
 		wantErr := New("some err")
 		wg.Go(func() error {

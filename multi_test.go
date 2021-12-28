@@ -159,12 +159,12 @@ func TestAppend(t *testing.T) {
 		multi := have.(*multiErr)
 		assert.Exactly(t, errs, multi.Errors())
 
-		if captureFrames {
-			assert.Equal(t, len(multi.frames), 1)
+		if traceStack {
+			assert.Equal(t, len(multi.stack.frames), 1)
 
 			_, file, line, _ := runtime.Caller(0)
 			// line must point to the last Append call a couple of lines above
-			assert.Contains(t, multi.StackFrames().String(), fmt.Sprintf("%s:%d", file, line-11))
+			assert.Contains(t, multi.StackTrace().String(), fmt.Sprintf("%s:%d", file, line-11))
 		}
 	})
 }

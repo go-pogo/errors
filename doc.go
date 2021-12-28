@@ -14,19 +14,22 @@ The New and Newf functions create errors whose content is a text message and
 whom can trace stack frames. Wrap and Wrapf create errors by wrapping an
 existing error with a similar error like New and Newf.
 
-Stack tracing
+StackTrace tracing
 
-Every error can track stack trace information. Just wrap it with errors.Trace
-and an additional stack frame is captured and stored within the error.
+Every error can track stack trace information. Just wrap it with errors.WithStack
+and a complete stack trace is captured.
 
-	err = errors.Trace(err)
+	err = errors.WithStack(err)
 
-Printing the error results in:
+Printing the error results in a trace similar to:
+
 	some error: something happened:
-		main.doSomething
-			.../errors/examples/2_trace/main.go:17
-		main.someAction
-			.../errors/examples/2_trace/main.go:12
+	    main.main
+	        /go-pogo/errors/.examples/3_with_kind/main.go:24
+	    main.doSomething
+	        /go-pogo/errors/.examples/3_with_kind/main.go:20
+	    main.someAction
+	        /go-pogo/errors/.examples/3_with_kind/main.go:16
 
 Formatting
 

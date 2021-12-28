@@ -74,7 +74,10 @@ func Append(dest *error, errs ...error) {
 			*dest = err
 
 		case *multiErr:
-			d.append(err)
+			if traceStack {
+				skipStackTrace(err, d.stack.Len())
+			}
+			d.errors = append(d.errors, err)
 
 		default:
 			*dest = newMultiErr([]error{*dest, err}, 1)
@@ -83,36 +86,41 @@ func Append(dest *error, errs ...error) {
 }
 
 type multiErr struct {
-	commonErr
 	errors []error
+	stack  *StackTrace
 }
 
-func newMultiErr(errors []error, trace uint) *multiErr {
-	if trace < 1 {
-		return &multiErr{errors: errors}
+func newMultiErr(errors []error, skipFrames uint) *multiErr {
+	m := &multiErr{errors: errors}
+	if !traceStack {
+		return m
 	}
 
-	m := &multiErr{errors: make([]error, 0, len(errors))}
-	m.Trace(trace + 1)
-	for _, err := range errors {
-		m.append(err)
+	m.stack = newStackTrace(skipFrames + 1)
+	skip := m.stack.Len()
+	for _, err := range m.errors {
+		skipStackTrace(err, skip)
 	}
 	return m
-}
-
-func (m *multiErr) append(err error) {
-	if fr := GetStackFrames(err); fr != nil {
-		*fr = []xerrors.Frame(*fr)[:len(m.commonErr.frames)]
-	}
-	m.errors = append(m.errors, err)
 }
 
 // Errors returns the errors within the multi error.
 func (m *multiErr) Errors() []error { return m.errors }
 
+func (m *multiErr) StackTrace() *StackTrace { return m.stack }
+
 func (m *multiErr) Is(target error) bool {
 	for _, err := range m.errors {
 		if Is(err, target) {
+			return true
+		}
+	}
+	return false
+}
+
+func (m *multiErr) As(target interface{}) bool {
+	for _, err := range m.errors {
+		if As(err, target) {
 			return true
 		}
 	}
@@ -128,7 +136,7 @@ func (m *multiErr) Format(s fmt.State, v rune) { xerrors.FormatError(m, s, v) }
 func (m *multiErr) FormatError(p xerrors.Printer) error {
 	p.Print(m.Error())
 	if p.Detail() {
-		m.frames.Format(p)
+		m.stack.Format(p)
 
 		l := len(m.errors)
 		for i, err := range m.errors {
@@ -140,22 +148,15 @@ func (m *multiErr) FormatError(p xerrors.Printer) error {
 }
 
 func (m *multiErr) Error() string {
-	buf := bufPool.Get().(*strings.Builder)
-	defer releaseBuf(buf)
-
+	var buf strings.Builder
 	buf.WriteString("multiple errors occurred:")
 
 	l := len(m.errors)
 	for i, e := range m.errors {
-		_, _ = fmt.Fprintf(buf, "\n[%d/%d] %s", i+1, l, e.Error())
+		_, _ = fmt.Fprintf(&buf, "\n[%d/%d] %s", i+1, l, e.Error())
 		if i < l-1 {
 			buf.WriteRune(';')
 		}
 	}
 	return buf.String()
-}
-
-// GoString prints a basic error syntax.
-func (m *multiErr) GoString() string {
-	return goString(m, nil)
 }

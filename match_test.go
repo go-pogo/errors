@@ -11,13 +11,19 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 )
 
 func assertErrorIs(t *testing.T, err, target error) bool {
 	return assert.True(t, Is(err, target), fmt.Sprintf("error %T should match with target %T", err, target))
+}
+
+func assertErrorIsMany(t *testing.T, err error, targets ...error) {
+	for _, target := range targets {
+		t.Run("", func(t *testing.T) {
+			assertErrorIs(t, err, target)
+		})
+	}
 }
 
 type errChainHelper []error
@@ -32,68 +38,43 @@ func (h *errChainHelper) prepend(err error) error {
 	return err
 }
 
-func (h errChainHelper) last() error {
-	return h[len(h)-1]
+func (h errChainHelper) last() error { return h[len(h)-1] }
+
+func wrappers() map[string]func(parent error) error {
+	res := embedders()
+	res["WithKind"] = func(parent error) error {
+		return WithKind(parent, "some kind")
+	}
+	return res
 }
 
 // test if the root cause error matches all wrapping errors in the chain
 func TestIs(t *testing.T) {
-	rootCause := New("root cause")
-	stdRootCause := stderrors.New("root cause")
+	baseErr := New("root cause")
+	wrapErr := Wrap(baseErr, "its a wrap")
+	stdBase := stderrors.New("root cause")
+	stdWrap := fmt.Errorf("error: %w", stdBase)
 
-	chains := map[string]func(chain *errChainHelper){
-		"base": func(chain *errChainHelper) {
-			_ = chain.append(rootCause)
-		},
-		"std": func(chain *errChainHelper) {
-			_ = chain.append(stdRootCause)
-		},
-		"traced base": func(chain *errChainHelper) {
-			err := chain.append(rootCause)
-			_ = chain.append(Trace(err))
-		},
-		"traced std": func(chain *errChainHelper) {
-			err := chain.append(stdRootCause)
-			_ = chain.append(Trace(err))
-		},
-		"base with kind": func(chain *errChainHelper) {
-			err := chain.append(rootCause)
-			_ = chain.append(WithKind(err, "kind"))
-		},
-		"std with kind": func(chain *errChainHelper) {
-			err := chain.append(stdRootCause)
-			_ = chain.append(WithKind(err, "kind"))
-		},
+	chains := map[string]errChainHelper{
+		"base":      {baseErr},
+		"wrap":      {wrapErr},
+		"std error": {stdBase},
+		"std wrap":  {stdBase, stdWrap},
+
+		"std with stack": {stdBase, WithStack(stdBase)},
+
+		"base with kind": {baseErr, WithKind(baseErr, "kind")},
+		"std with kind":  {stdBase, WithKind(stdBase, "kind")},
 	}
 
-	tests := map[string]func(parent error) error{
-		"WithKind": func(parent error) error {
-			return WithKind(parent, "some kind")
-		},
-		"WithExitCode": func(parent error) error {
-			return WithExitCode(parent, 1)
-		},
-		"WithFormatter": func(parent error) error {
-			return WithFormatter(parent)
-		},
-		"Trace": func(parent error) error {
-			return Trace(parent)
-		},
-	}
-
-	for group, upgradeFn := range tests {
+	for group, wrapFn := range wrappers() {
 		t.Run(group, func(t *testing.T) {
-			for name, setupFn := range chains {
+			for name, chain := range chains {
 				t.Run(name, func(t *testing.T) {
-					var chain errChainHelper
-					setupFn(&chain)
+					// pass the last error to the function we'd like  to test
+					err := chain.append(wrapFn(chain.last()))
 
-					// pass the last error to the upgrade function we'd like
-					// to test
-					err := upgradeFn(chain.last())
-					_ = chain.append(err)
-
-					assert.Same(t, chain[0], Original(RootCause(err)))
+					// assert.Same(t, chain[0], Original(Cause(err)))
 
 					for i, target := range chain {
 						for j := i; j < len(chain); j++ {
@@ -126,10 +107,9 @@ type customError struct{}
 func (ce *customError) Error() string { return "this is a custom error" }
 
 func TestAs(t *testing.T) {
-	disableCaptureFrames()
-	defer enableCaptureFrames()
+	disableTraceStack()
+	defer enableTraceStack()
 
-	var kindErr KindGetter
 	var customErr *customError
 	var pathErrPtr *os.PathError
 	_, pathErr := os.Open("non-existing")
@@ -139,24 +119,24 @@ func TestAs(t *testing.T) {
 		target interface{}
 		wantFn func(err error) interface{}
 	}{
-		"commonErr with kind": {
-			error:  WithKind(New("err with kind"), "foobar"),
-			target: &kindErr,
-			wantFn: func(err error) interface{} {
-				ce := newErr(stderrors.New("err with kind"), 0)
-				ce.kind = "foobar"
-				return ce
-			},
-		},
+		// "commonErr with kind": {
+		// 	error:  WithKind(New("err with kind"), "foobar"),
+		// 	target: &kindErr,
+		// 	wantFn: func(err error) interface{} {
+		// 		ce := newCommonError(stderrors.New("err with kind"), 0)
+		// 		ce.kind = "foobar"
+		// 		return ce
+		// 	},
+		// },
 		"traced os.PathError": {
-			error:  Trace(pathErr),
+			error:  WithStack(pathErr),
 			target: &pathErrPtr,
 			wantFn: func(err error) interface{} {
 				return pathErr
 			},
 		},
 		"traced custom error": {
-			error:  Trace(&customError{}),
+			error:  WithStack(&customError{}),
 			target: &customErr,
 			wantFn: func(err error) interface{} {
 				return &customError{}
@@ -174,7 +154,7 @@ func TestAs(t *testing.T) {
 			got := val.Elem().Interface()
 			want := tc.wantFn(tc.error)
 
-			assert.Equal(t, want, got, cmp.Diff(got, want, cmpopts.EquateErrors()))
+			assert.Equal(t, want, got)
 		})
 	}
 }

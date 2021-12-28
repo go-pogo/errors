@@ -11,21 +11,16 @@ import (
 	"github.com/go-pogo/errors"
 )
 
-//
-// define custom error
-//
 type customErr struct {
-	Cause error
-	Value string
+	cause error
+	value string
 }
 
-func (ce *customErr) Unwrap() error { return ce.Cause }
+func (ce *customErr) Unwrap() error { return ce.cause }
 
 func (ce *customErr) Error() string {
-	return fmt.Sprintf("just a custom error message with `%s`", ce.Value)
+	return fmt.Sprintf("just a custom error message with `%s`", ce.value)
 }
-
-func (ce *customErr) Format(s fmt.State, v rune) { errors.FormatError(ce, s, v) }
 
 //
 // actual "program"
@@ -33,15 +28,15 @@ func (ce *customErr) Format(s fmt.State, v rune) { errors.FormatError(ce, s, v) 
 func unmarshal() (struct{}, error) {
 	dest := struct{}{}
 	err := json.Unmarshal([]byte("invalid"), &dest) // this wil result in an error
-	return dest, errors.Trace(err)
+	return dest, errors.WithStack(err)
 }
 
-func someAction() error {
+func doSomething() error {
 	data, err := unmarshal()
 	if err != nil {
-		return errors.Trace(&customErr{
-			Cause: err,
-			Value: "some important value",
+		return errors.WithStack(&customErr{
+			cause: err,
+			value: "some important value",
 		})
 	}
 
@@ -51,7 +46,7 @@ func someAction() error {
 }
 
 func main() {
-	err := someAction()
+	err := doSomething()
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		fmt.Println("//////////")

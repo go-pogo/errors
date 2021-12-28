@@ -89,8 +89,8 @@ func TestList_All(t *testing.T) {
 }
 
 func TestList_Combine(t *testing.T) {
-	disableCaptureFrames()
-	defer enableCaptureFrames()
+	disableTraceStack()
+	defer enableTraceStack()
 
 	errs := []error{
 		New("some err"),

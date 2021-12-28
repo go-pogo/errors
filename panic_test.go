@@ -54,13 +54,13 @@ func TestMust(t *testing.T) {
 }
 
 func TestCatchPanic(t *testing.T) {
-	disableCaptureFrames()
-	defer enableCaptureFrames()
+	disableTraceStack()
+	defer enableTraceStack()
 
 	t.Run("panic string", func(t *testing.T) {
 		var want error
 		defer func() {
-			assert.Equal(t, newErr(&panicErr{"paniek!"}, 0), want)
+			assert.Equal(t, newCommonErr(&panicErr{"paniek!"}, false), want)
 		}()
 		defer CatchPanic(&want)
 		panic("paniek!")

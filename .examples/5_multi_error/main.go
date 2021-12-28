@@ -6,7 +6,6 @@ package main
 
 import (
 	"encoding/json"
-	stderrors "errors"
 	"fmt"
 
 	"github.com/go-pogo/errors"
@@ -15,14 +14,14 @@ import (
 func unmarshal() (struct{}, error) {
 	dest := struct{}{}
 	err := json.Unmarshal([]byte("invalid"), &dest) // this wil result in an error
-	return dest, errors.Trace(err)
+	return dest, errors.WithStack(err)
 }
 
 func finish() error {
-	return errors.Trace(stderrors.New("some error occurred while closing something"))
+	return errors.New("some error occurred while closing something")
 }
 
-func someAction() (err error) {
+func doSomething() (err error) {
 	defer errors.Append(&err, finish())
 
 	data, unmarshalErr := unmarshal()
@@ -37,7 +36,7 @@ func someAction() (err error) {
 }
 
 func main() {
-	err := someAction()
+	err := doSomething()
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		fmt.Println("//////////")

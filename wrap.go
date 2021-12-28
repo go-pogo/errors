@@ -7,39 +7,50 @@ package errors
 import (
 	stderrors "errors"
 	"fmt"
+
+	"golang.org/x/xerrors"
 )
 
-// An Unwrapper unpacks a wrapped error.
-type Unwrapper interface {
+// A Wrapper provides context around another error, which can be retrieved with
+// Unwrap.
+type Wrapper interface {
 	error
-	// Unwrap returns the next error in the error chain.
-	// If there is no next error, Unwrap returns nil.
-	Unwrap() (next error)
+	xerrors.Wrapper
 }
 
 // Wrap creates a new error that wraps around the causing error, thus extending
 // the error chain. It will only create a new error when the provided cause
 // error is not nil, otherwise it will return nil.
+// Wrap also records the stack trace at the point it was called.
 func Wrap(cause error, text string) error {
 	if cause == nil {
 		return nil
 	}
-	return withCause(newErr(stderrors.New(text), 1), cause)
+	return withCause(newCommonErr(stderrors.New(text), true), cause)
 }
 
 // Wrapf formats an error message according to a format specifier and provided
-// arguments and creates a new error the same way Wrap() does.
+// arguments and creates a new error the same way Wrap does.
 func Wrapf(cause error, format string, a ...interface{}) error {
 	if cause == nil {
 		return nil
 	}
-	return withCause(newErr(fmt.Errorf(format, a...), 1), cause)
+	return withCause(newCommonErr(fmt.Errorf(format, a...), true), cause)
 }
 
+// Opaque is an alias of xerrors.Opaque. It returns an error with the same error
+// formatting as err but that does not match err and cannot be unwrapped.
+func Opaque(err error) error { return xerrors.Opaque(err) }
+
+// Unwrap is an alias of errors.Unwrap. It returns the result of calling the
+// Unwrap method on err, if err's type contains an Unwrap method returning
+// error. Otherwise, Unwrap returns nil.
+func Unwrap(err error) error { return stderrors.Unwrap(err) }
+
 // UnwrapAll returns the complete chain of errors, starting with the supplied
-// error and ending with the (upgraded) root cause error.
+// error and ending with the root cause error.
 func UnwrapAll(err error) []error {
-	var res []error
+	res := make([]error, 0, 6)
 	for {
 		if err == nil {
 			break
@@ -50,13 +61,9 @@ func UnwrapAll(err error) []error {
 	return res
 }
 
-// RootCause walks through all wrapped errors and returns the last (upgraded)
-// error in the chain, which is the root cause error.
-// To get the original non-upgraded root cause error use
-//
-//   Original(RootCause(err))
-//
-func RootCause(err error) error {
+// Cause walks through all wrapped errors and returns the last error in the
+// chain.
+func Cause(err error) error {
 	for {
 		unwrapped := Unwrap(err)
 		if unwrapped == nil {

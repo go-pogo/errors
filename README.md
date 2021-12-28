@@ -38,11 +38,11 @@ import "github.com/go-pogo/errors"
 ```
 
 ## Stack trace
-Every error can track stack trace information. Just wrap it with `errors.Trace` and an additional
-stack frame is captured and stored within the error.
+Every error can track stack trace information. Just wrap it with `errors.WithStack`
+and a complete stack trace is captured.
 
 ```go
-err = errors.Trace(err)
+err = errors.WithStack(err)
 ```
 
 ```text
