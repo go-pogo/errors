@@ -9,62 +9,29 @@ package errors
 
 import (
 	stderrors "errors"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTrace(t *testing.T) {
+func TestGetStackTrace(t *testing.T) {
 	t.Run("with nil", func(t *testing.T) {
-		assert.Nil(t, Trace(nil))
+		assert.Nil(t, GetStackTrace(nil))
+	})
+	t.Run("with std error", func(t *testing.T) {
+		assert.Nil(t, GetStackTrace(stderrors.New("err")))
 	})
 
-	tests := map[string]struct {
-		err     error
-		wantLen int
-	}{
-		"with primitive": {
-			err:     stderrors.New(""),
-			wantLen: 1,
-		},
-		"with traced primitive": {
-			err:     Trace(stderrors.New("")),
-			wantLen: 2,
-		},
-		"with error": {
-			err:     New(""),
-			wantLen: 2,
-		},
-		"with traced error": {
-			err:     Trace(New("")),
-			wantLen: 3,
-		},
+	tests := map[string]error{
+		"with error":                New("err"),
+		"with std error with stack": WithStack(stderrors.New("err")),
 	}
 
-	for name, tc := range tests {
+	for name, err := range tests {
 		t.Run(name, func(t *testing.T) {
-			err := Trace(tc.err).(StackTracer)
-			if !assert.Len(t, *err.StackFrames(), tc.wantLen) {
-				fmt.Printf("\n%+v\n", err)
-			}
+			f := GetStackTrace(err)
+			assert.Len(t, f.Frames(), 1)
+			assert.Contains(t, f.String(), "trace_test.go:")
 		})
 	}
-}
-
-func TestGetStackFrames(t *testing.T) {
-	t.Run("with nil", func(t *testing.T) {
-		assert.Nil(t, GetStackFrames(nil))
-	})
-
-	t.Run("with error", func(t *testing.T) {
-		f := GetStackFrames(New(""))
-		assert.Len(t, *f, 1)
-		assert.Contains(t, f.String(), "trace_test.go:")
-	})
-	t.Run("with traced error", func(t *testing.T) {
-		f := GetStackFrames(Trace(New("")))
-		assert.Len(t, *f, 2)
-		assert.Contains(t, f.String(), "trace_test.go:")
-	})
 }
