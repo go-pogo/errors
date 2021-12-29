@@ -57,7 +57,7 @@ func TestIs(t *testing.T) {
 
 	chains := map[string]errChainHelper{
 		"base":      {baseErr},
-		"wrap":      {wrapErr},
+		"wrap":      {baseErr, wrapErr},
 		"std error": {stdBase},
 		"std wrap":  {stdBase, stdWrap},
 
@@ -73,8 +73,7 @@ func TestIs(t *testing.T) {
 				t.Run(name, func(t *testing.T) {
 					// pass the last error to the function we'd like  to test
 					err := chain.append(wrapFn(chain.last()))
-
-					// assert.Same(t, chain[0], Original(Cause(err)))
+					assert.Same(t, chain[0], Cause(err))
 
 					for i, target := range chain {
 						for j := i; j < len(chain); j++ {
@@ -119,15 +118,6 @@ func TestAs(t *testing.T) {
 		target interface{}
 		wantFn func(err error) interface{}
 	}{
-		// "commonErr with kind": {
-		// 	error:  WithKind(New("err with kind"), "foobar"),
-		// 	target: &kindErr,
-		// 	wantFn: func(err error) interface{} {
-		// 		ce := newCommonError(stderrors.New("err with kind"), 0)
-		// 		ce.kind = "foobar"
-		// 		return ce
-		// 	},
-		// },
 		"traced os.PathError": {
 			error:  WithStack(pathErr),
 			target: &pathErrPtr,
