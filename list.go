@@ -42,7 +42,7 @@ func NewList(cap ...uint) *List {
 // All returns the error slice within the list.
 func (l *List) All() []error {
 	if l.list == nil {
-		l.list = make([]error, 0, 0)
+		l.list = make([]error, 0)
 	}
 	return l.list
 }
