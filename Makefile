@@ -1,25 +1,9 @@
-# run tests with coverage and race detection
-test:
-	go test -race -cover -coverprofile=coverage.out -v github.com/go-pogo/errors
-	go tool cover -func=coverage.out
+EXAMPLE1=1_basic
+EXAMPLE2=2_with_kind
+EXAMPLE3=3_with_stack
+EXAMPLE4=4_custom_error
+EXAMPLE5=5_multi_error
+EXAMPLE6=6_catch_panic
 
-bench:
-	go test -bench=.
-
-example1:
-	go run -race ./.examples/1_basic/main.go
-
-example2:
-	go run -race ./.examples/2_with_kind/main.go
-
-example3:
-	go run -race ./.examples/3_with_stack/main.go
-
-example4:
-	go run -race ./.examples/4_custom_error/main.go
-
-example5:
-	go run -race ./.examples/5_multi_error/main.go
-
-example6:
-	go run -race ./.examples/6_catch_panic/main.go
+example%:
+	go run -race ./.examples/$(EXAMPLE$(*))/main.go
