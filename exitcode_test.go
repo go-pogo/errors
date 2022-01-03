@@ -32,7 +32,7 @@ func TestWithExitCode(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			have := WithExitCode(tc.err, tc.code1)
 			assert.Exactly(t, tc.code1, GetExitCode(have))
-			assertErrorIs(t, have, tc.err)
+			assert.ErrorIs(t, have, tc.err)
 
 			// update existing exitcode
 			t.Run("update", func(t *testing.T) {

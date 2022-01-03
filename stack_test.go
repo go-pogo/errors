@@ -24,7 +24,7 @@ func TestWithStack(t *testing.T) {
 	t.Run("with std error", func(t *testing.T) {
 		err := stderrors.New("some err")
 		have := WithStack(err)
-		assertErrorIs(t, have, err)
+		assert.ErrorIs(t, have, err)
 
 		if !traceStack {
 			return

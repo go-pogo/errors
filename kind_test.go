@@ -46,8 +46,8 @@ func TestWithKind(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			have := WithKind(tc.err, tc.kind)
-			assertErrorIs(t, have, tc.err)
-			assertErrorIs(t, have, tc.kind)
+			assert.ErrorIs(t, have, tc.err)
+			assert.ErrorIs(t, have, tc.kind)
 			assert.Exactly(t, tc.kind, GetKind(have))
 		})
 	}

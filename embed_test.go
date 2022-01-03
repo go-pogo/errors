@@ -42,7 +42,7 @@ func TestUnembed(t *testing.T) {
 				t.Run(name, func(t *testing.T) {
 					have := embedFn(want)
 					assert.Same(t, want, Unembed(have))
-					assertErrorIs(t, have, want)
+					assert.ErrorIs(t, have, want)
 				})
 			}
 		})

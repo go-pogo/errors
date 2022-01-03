@@ -14,18 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func assertErrorIs(t *testing.T, err, target error) bool {
-	return assert.True(t, Is(err, target), fmt.Sprintf("error %T should match with target %T", err, target))
-}
-
-func assertErrorIsMany(t *testing.T, err error, targets ...error) {
-	for _, target := range targets {
-		t.Run("", func(t *testing.T) {
-			assertErrorIs(t, err, target)
-		})
-	}
-}
-
 type errChainHelper []error
 
 func (h *errChainHelper) append(err error) error {
@@ -78,7 +66,7 @@ func TestIs(t *testing.T) {
 					for i, target := range chain {
 						for j := i; j < len(chain); j++ {
 							err = chain[j]
-							assertErrorIs(t, err, target)
+							assert.ErrorIs(t, err, target)
 						}
 					}
 				})
@@ -92,12 +80,12 @@ func TestIs(t *testing.T) {
 		withFormatter := WithFormatter(withKind)
 
 		// both upgrades should match with the original error
-		assertErrorIs(t, withKind, rootCause)
-		assertErrorIs(t, withFormatter, rootCause)
+		assert.ErrorIs(t, withKind, rootCause)
+		assert.ErrorIs(t, withFormatter, rootCause)
 
 		// both upgrades should match with each other
-		assertErrorIs(t, withKind, withFormatter)
-		assertErrorIs(t, withFormatter, withKind)
+		assert.ErrorIs(t, withKind, withFormatter)
+		assert.ErrorIs(t, withFormatter, withKind)
 	})
 }
 
