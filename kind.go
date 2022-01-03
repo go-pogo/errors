@@ -43,6 +43,8 @@ func (k Kind) String() string { return string(k) }
 
 func (k Kind) Error() string { return string(k) }
 
+func (k Kind) GoString() string { return `errors.Kind("` + string(k) + `")` }
+
 // WithKind wraps an error with Kind, therefore extending the error chain.
 func WithKind(err error, kind Kind) error {
 	if err == nil || kind == UnknownKind {

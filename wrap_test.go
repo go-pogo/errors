@@ -36,7 +36,7 @@ func TestWrapWrapf(t *testing.T) {
 			assert.Exactly(t, tc.cause, Unwrap(wrap))
 
 			wrapf := Wrapf(tc.cause, tc.format, tc.args...)
-			assert.Exactly(t, wrap, wrapf)
+			assert.Exactly(t, wrap.Error(), wrapf.Error())
 		})
 	}
 

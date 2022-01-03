@@ -7,6 +7,7 @@ package errors
 import (
 	stderrors "errors"
 	"fmt"
+	"reflect"
 
 	"golang.org/x/xerrors"
 )
@@ -18,24 +19,59 @@ type Wrapper interface {
 	xerrors.Wrapper
 }
 
-// Wrap creates a new error that wraps around the causing error, thus extending
-// the error chain. It will only create a new error when the provided cause
-// error is not nil, otherwise it will return nil.
-// Wrap also records the stack trace at the point it was called.
-func Wrap(cause error, text string) error {
-	if cause == nil {
-		return nil
+const panicUseWithKindInstead = "errors.Wrap: use errors.WithKind instead to wrap an error with an errors.Kind"
+
+// Wrap creates a new error, which implements the StackTracer, Wrapper and
+// xerrors.Formatter interfaces, that wraps around the causing error. Argument
+// msg can be either a string or Msg.
+//
+//    err = errors.Wrap(err, "my error message")
+//    err = errors.Wrap(err, errors.Msg("my error message"))
+//
+// Wrap records a stack trace at the point it was called. Each call returns a
+// distinct error value even if cause and msg are identical.
+// Wrap will return nil when cause is nil, and it will return the provided cause
+// when msg is nil.
+func Wrap(cause error, msg interface{}) error {
+	if cause == nil || msg == nil {
+		return cause
 	}
-	return withCause(newCommonErr(stderrors.New(text), true), cause)
+
+	var parent error
+	switch v := msg.(type) {
+
+	case string:
+		parent = Msg(v)
+	case *string:
+		parent = Msg(*v)
+
+	case Msg:
+		parent = v
+	case *Msg:
+		parent = *v
+
+	case Kind, *Kind:
+		panic(panicUseWithKindInstead)
+
+	default:
+		panic(UnsupportedTypeError{
+			Func: "errors.Wrap",
+			Type: reflect.TypeOf(v).String(),
+		})
+	}
+
+	return withCause(newCommonErr(parent, true), cause)
 }
 
 // Wrapf formats an error message according to a format specifier and provided
-// arguments and creates a new error the same way Wrap does.
-func Wrapf(cause error, format string, a ...interface{}) error {
+// arguments with fmt.Errorf, and creates a new error similar to Wrap.
+//
+//    err = errors.Wrapf(err, "my error %s", "message")
+func Wrapf(cause error, format string, args ...interface{}) error {
 	if cause == nil {
 		return nil
 	}
-	return withCause(newCommonErr(fmt.Errorf(format, a...), true), cause)
+	return withCause(newCommonErr(fmt.Errorf(format, args...), true), cause)
 }
 
 // Opaque is an alias of xerrors.Opaque. It returns an error with the same error
