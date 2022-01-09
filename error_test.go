@@ -89,7 +89,7 @@ func TestNew(t *testing.T) {
 			t.Run(typ, func(t *testing.T) {
 				assert.PanicsWithValue(t,
 					UnsupportedTypeError{Func: "errors.New", Type: typ},
-					func() { New(input) },
+					func() { _ = New(input) },
 				)
 			})
 		}
@@ -121,27 +121,30 @@ func TestMsg(t *testing.T) {
 func TestMsg_Is(t *testing.T) {
 	t.Run("true", func(t *testing.T) {
 		msg := Msg("some err")
-		tests := map[string][2]error{
-			"Msg":         {Msg("foobar"), Msg("foobar")},
-			"*Msg":        {&msg, &msg},
-			"ptr to Msg":  {Msg("some err"), &msg},
-			"val of *Msg": {&msg, Msg("some err")},
+		tests := map[string]error{
+			"Msg":  Msg("some err"),
+			"*Msg": &msg,
 		}
-		for name, tc := range tests {
-			t.Run(name, func(t *testing.T) {
-				assert.ErrorIs(t, tc[0], tc[1])
-			})
+		for a, err := range tests {
+			for b, target := range tests {
+				t.Run(a+"/"+b, func(t *testing.T) {
+					assert.ErrorIs(t, err, target)
+				})
+			}
 		}
 	})
 
 	t.Run("false", func(t *testing.T) {
+		msg := "some err"
 		targets := map[string]error{
-			"stderror":             stderrors.New("some err"),
 			"different msg string": Msg("blabla"),
+			"stderror":             stderrors.New(msg),
+			"error":                New(msg),
+			"Kind":                 Kind(msg),
 		}
 		for name, target := range targets {
 			t.Run(name, func(t *testing.T) {
-				assert.NotErrorIs(t, Msg("some err"), target)
+				assert.NotErrorIs(t, Msg(msg), target)
 			})
 		}
 	})

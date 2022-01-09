@@ -12,6 +12,53 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestKind(t *testing.T) {
+	kind := Kind("some msg")
+	assert.Equal(t, kind.String(), kind.Error())
+}
+
+func TestKind_Is(t *testing.T) {
+	t.Run("true", func(t *testing.T) {
+		kind := Kind("foobar")
+		tests := map[string]error{
+			"Kind":  Kind("foobar"),
+			"*Kind": &kind,
+		}
+		for a, err := range tests {
+			for b, target := range tests {
+				t.Run(a+"/"+b, func(t *testing.T) {
+					assert.ErrorIs(t, err, target)
+				})
+			}
+		}
+	})
+
+	t.Run("false", func(t *testing.T) {
+		targets := map[string]error{
+			"stderror":             stderrors.New("some err"),
+			"different msg string": Msg("blabla"),
+		}
+		for name, target := range targets {
+			t.Run(name, func(t *testing.T) {
+				assert.NotErrorIs(t, Msg("some err"), target)
+			})
+		}
+	})
+}
+
+func TestKind_As(t *testing.T) {
+	t.Run("true", func(t *testing.T) {
+		var dest Kind
+		assert.True(t, Kind("hi there").As(&dest))
+		assert.Exactly(t, Kind("hi there"), dest)
+	})
+	t.Run("false", func(t *testing.T) {
+		var dest Kind
+		assert.False(t, Kind("hi there").As(dest))
+		assert.Exactly(t, Kind(""), dest)
+	})
+}
+
 func TestWithKind(t *testing.T) {
 	tests := map[string]struct {
 		err  error

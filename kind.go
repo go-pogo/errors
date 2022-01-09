@@ -86,13 +86,9 @@ func (e *kindError) StackTrace() *StackTrace { return e.stack }
 
 func (e *kindError) Unwrap() error { return e.cause }
 
-func (e *kindError) Is(target error) bool {
-	return e.kind.Is(target)
-}
+func (e *kindError) Is(target error) bool { return e.kind.Is(target) }
 
-func (e *kindError) As(target interface{}) bool {
-	return e.kind.As(target)
-}
+func (e *kindError) As(target interface{}) bool { return e.kind.As(target) }
 
 // Format uses xerrors.FormatError to call the FormatError method of the error
 // with a xerrors.Printer configured according to s and v, and writes the
