@@ -77,9 +77,9 @@ func GetKindOr(err error, or Kind) Kind {
 }
 
 type kindError struct {
-	kind  Kind
 	cause error
 	stack *StackTrace
+	kind  Kind
 }
 
 func (e *kindError) StackTrace() *StackTrace { return e.stack }

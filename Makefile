@@ -7,3 +7,7 @@ EXAMPLE6=6_catch_panic
 
 example%:
 	go run -race ./.examples/$(EXAMPLE$(*))/main.go
+
+vet:
+# go install golang.org/x/tools/go/analysis/passes/fieldalignment/cmd/fieldalignment
+	go vet -vettool=$(shell where fieldalignment) ./...

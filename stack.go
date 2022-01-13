@@ -56,11 +56,11 @@ func GetStackTrace(err error) *StackTrace {
 }
 
 type StackTrace struct {
+	frames []xerrors.Frame
+
 	// Skip n frames when formatting with Format, so overlapping frames from
 	// previous errors are not printed.
 	Skip uint
-
-	frames []xerrors.Frame
 }
 
 func newStackTrace(skipFrames uint) *StackTrace {

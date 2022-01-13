@@ -13,8 +13,8 @@ import (
 // subtasks and, unlike golang.org/x/sync/errgroup.Group, does not cancel the
 // group when an error is encountered.
 type WaitGroup struct {
-	wg   sync.WaitGroup
 	errs List
+	wg   sync.WaitGroup
 }
 
 // ErrorList returns a List of collected errors from the called goroutines.

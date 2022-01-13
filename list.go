@@ -16,8 +16,8 @@ type ErrorLister interface {
 }
 
 type List struct {
-	sync.RWMutex
 	list []error
+	sync.RWMutex
 }
 
 const panicNewListArgs = "errors.NewList: only one argument is allowed"

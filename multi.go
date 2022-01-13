@@ -86,8 +86,8 @@ func Append(dest *error, errs ...error) {
 }
 
 type multiErr struct {
-	errors []error
 	stack  *StackTrace
+	errors []error
 }
 
 func newMultiErr(errors []error, skipFrames uint) *multiErr {
