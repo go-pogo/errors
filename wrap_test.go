@@ -17,16 +17,15 @@ func TestWrapWrapf(t *testing.T) {
 	defer enableTraceStack()
 
 	tests := map[string]struct {
-		message string
-		format  string
-		args    []interface{}
-		cause   error
+		cause           error
+		message, format string
+		args            []interface{}
 	}{
 		"with std error": {
+			cause:   stderrors.New("some err"),
 			message: "foobar",
 			format:  "%s",
 			args:    []interface{}{"foobar"},
-			cause:   stderrors.New("some err"),
 		},
 	}
 

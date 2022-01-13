@@ -6,6 +6,7 @@ package errors
 
 import (
 	stderrors "errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -45,6 +46,15 @@ func TestUnembed(t *testing.T) {
 					assert.ErrorIs(t, have, want)
 				})
 			}
+		})
+	}
+}
+
+func TestEmbedError_Format(t *testing.T) {
+	err := stderrors.New("foobar")
+	for name, embedFn := range embedders() {
+		t.Run(name, func(t *testing.T) {
+			assert.Exactly(t, "foobar", fmt.Sprintf("%v", embedFn(err)))
 		})
 	}
 }

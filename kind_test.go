@@ -28,6 +28,7 @@ func TestKind_Is(t *testing.T) {
 			for b, target := range tests {
 				t.Run(a+"/"+b, func(t *testing.T) {
 					assert.ErrorIs(t, err, target)
+					assert.ErrorIs(t, &kindError{kind: "foobar"}, target)
 				})
 			}
 		}
@@ -36,11 +37,12 @@ func TestKind_Is(t *testing.T) {
 	t.Run("false", func(t *testing.T) {
 		targets := map[string]error{
 			"stderror":             stderrors.New("some err"),
-			"different msg string": Msg("blabla"),
+			"different msg string": Kind("blabla"),
 		}
 		for name, target := range targets {
 			t.Run(name, func(t *testing.T) {
-				assert.NotErrorIs(t, Msg("some err"), target)
+				assert.NotErrorIs(t, Kind("some err"), target)
+				assert.NotErrorIs(t, &kindError{kind: "some err"}, target)
 			})
 		}
 	})
@@ -51,10 +53,18 @@ func TestKind_As(t *testing.T) {
 		var dest Kind
 		assert.True(t, Kind("hi there").As(&dest))
 		assert.Exactly(t, Kind("hi there"), dest)
+
+		dest = ""
+		assert.True(t, (&kindError{kind: "hi there"}).As(&dest))
+		assert.Exactly(t, Kind("hi there"), dest)
+
 	})
 	t.Run("false", func(t *testing.T) {
 		var dest Kind
 		assert.False(t, Kind("hi there").As(dest))
+		assert.Exactly(t, Kind(""), dest)
+
+		assert.False(t, (&kindError{kind: "hi there"}).As(dest))
 		assert.Exactly(t, Kind(""), dest)
 	})
 }

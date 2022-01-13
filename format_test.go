@@ -50,25 +50,62 @@ func TestFormatError(t *testing.T) {
 	defer enableTraceStack()
 
 	tests := map[string]struct {
-		err  error
-		want string
+		err          error
+		want1, want2 string
 	}{
-		"nil": {},
 		"std error": {
-			err:  stderrors.New("some err"),
-			want: "some err",
+			err:   stderrors.New("some err"),
+			want1: "some err",
+			want2: "some err",
 		},
 		"error": {
-			err:  New("oh noes"),
-			want: "oh noes",
+			err:   New("oh noes"),
+			want1: "oh noes",
+			want2: "oh noes",
+		},
+		"wrap wrap": {
+			err:   Wrap(Wrap(New("some err"), "failure"), "whoops"),
+			want1: "whoops: failure: some err",
+			want2: "whoops:\n  - failure:\n  - some err",
+		},
+		"kind": {
+			err:   WithKind(New("some err"), "failure"),
+			want1: "failure: some err",
+			want2: "failure: some err:\n  - some err",
+		},
+		"kind Msg": {
+			err:   WithKind(Msg("some err"), "failure"),
+			want1: "failure: some err",
+			want2: "failure: some err",
+		},
+		"wrap kind": {
+			err:   Wrap(WithKind(New("some err"), "failure"), "whoops"),
+			want1: "whoops: failure: some err",
+			want2: "whoops:\n  - failure: some err:\n  - some err",
+		},
+		"kind wrap": {
+			err:   WithKind(Wrap(New("some err"), "failure"), "whoops"),
+			want1: "whoops: failure: some err",
+			want2: "whoops: failure:\n  - failure:\n  - some err",
 		},
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			state := fmtStateHelper{flags: "+"}
-			FormatError(tc.err, &state, 'v')
-			assert.Exactly(t, tc.want, state.String())
+			// without details
+			t.Run("plain", func(t *testing.T) {
+				var state fmtStateHelper
+				FormatError(tc.err, &state, 'v')
+				assert.Exactly(t, tc.want1, state.String())
+				assert.Exactly(t, tc.want1, fmt.Sprintf("%v", tc.err))
+			})
+			// with details
+			t.Run("details", func(t *testing.T) {
+				state := fmtStateHelper{flags: "+"}
+				FormatError(tc.err, &state, 'v')
+				assert.Exactly(t, tc.want2, state.String())
+				assert.Exactly(t, tc.want2, fmt.Sprintf("%+v", tc.err))
+			})
 		})
 	}
 }
@@ -106,8 +143,8 @@ func TestPrintError(t *testing.T) {
 }
 
 type fmtStateHelper struct {
-	bytes.Buffer
 	flags string
+	bytes.Buffer
 }
 
 func (ts *fmtStateHelper) Width() (int, bool) { return 0, false }
