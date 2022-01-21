@@ -26,7 +26,7 @@ func provideErrors(withEmbedders bool) map[string]error {
 		if withEmbedders {
 			for b, embedFn := range provideEmbedders() {
 				func() {
-					defer func() { recover() }()
+					defer func() { _ = recover() }()
 					res[a+"/"+b] = embedFn(errFn())
 				}()
 			}
