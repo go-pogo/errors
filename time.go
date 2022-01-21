@@ -49,7 +49,6 @@ func GetTime(err error) (time.Time, bool) {
 		if e, ok := err.(Timer); ok {
 			dt = e.Time()
 			has = true
-			continue
 		}
 		err = Unwrap(err)
 		if err == nil {
