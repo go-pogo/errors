@@ -53,6 +53,7 @@ func TestFormatError(t *testing.T) {
 		err          error
 		want1, want2 string
 	}{
+		"nil": {},
 		"std error": {
 			err:   stderrors.New("some err"),
 			want1: "some err",
@@ -97,14 +98,20 @@ func TestFormatError(t *testing.T) {
 				var state fmtStateHelper
 				FormatError(tc.err, &state, 'v')
 				assert.Exactly(t, tc.want1, state.String())
-				assert.Exactly(t, tc.want1, fmt.Sprintf("%v", tc.err))
+
+				if tc.err != nil {
+					assert.Exactly(t, tc.want1, fmt.Sprintf("%v", tc.err))
+				}
 			})
 			// with details
 			t.Run("details", func(t *testing.T) {
 				state := fmtStateHelper{flags: "+"}
 				FormatError(tc.err, &state, 'v')
 				assert.Exactly(t, tc.want2, state.String())
-				assert.Exactly(t, tc.want2, fmt.Sprintf("%+v", tc.err))
+
+				if tc.err != nil {
+					assert.Exactly(t, tc.want2, fmt.Sprintf("%+v", tc.err))
+				}
 			})
 		})
 	}

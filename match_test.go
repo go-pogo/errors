@@ -29,7 +29,7 @@ func (h *errChainHelper) prepend(err error) error {
 func (h errChainHelper) last() error { return h[len(h)-1] }
 
 func wrappers() map[string]func(parent error) error {
-	res := embedders()
+	res := provideEmbedders()
 	res["WithKind"] = func(parent error) error {
 		return WithKind(parent, "some kind")
 	}

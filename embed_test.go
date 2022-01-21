@@ -13,7 +13,29 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func embedders() map[string]func(parent error) error {
+func provideErrors(withEmbedders bool) map[string]error {
+	res := make(map[string]error, 10)
+	errs := map[string]func() error{
+		"std error": func() error { return stderrors.New("some err") },
+		"error":     func() error { return New("whoopsie") },
+		"Msg":       func() error { return Msg("my error message") },
+		"Kind":      func() error { return Kind("my error kind") },
+	}
+	for a, errFn := range errs {
+		res[a] = errFn()
+		if withEmbedders {
+			for b, embedFn := range provideEmbedders() {
+				func() {
+					defer func() { recover() }()
+					res[a+"/"+b] = embedFn(errFn())
+				}()
+			}
+		}
+	}
+	return res
+}
+
+func provideEmbedders() map[string]func(parent error) error {
 	return map[string]func(parent error) error{
 		"WithFormatter": func(parent error) error {
 			return WithFormatter(parent)
@@ -39,7 +61,7 @@ func TestUnembed(t *testing.T) {
 
 	for targetName, want := range targets {
 		t.Run(targetName, func(t *testing.T) {
-			for name, embedFn := range embedders() {
+			for name, embedFn := range provideEmbedders() {
 				t.Run(name, func(t *testing.T) {
 					have := embedFn(want)
 					assert.Same(t, want, Unembed(have))
@@ -52,7 +74,7 @@ func TestUnembed(t *testing.T) {
 
 func TestEmbedError_Format(t *testing.T) {
 	err := stderrors.New("foobar")
-	for name, embedFn := range embedders() {
+	for name, embedFn := range provideEmbedders() {
 		t.Run(name, func(t *testing.T) {
 			assert.Exactly(t, "foobar", fmt.Sprintf("%v", embedFn(err)))
 		})

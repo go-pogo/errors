@@ -45,8 +45,53 @@ func TestWrapWrapf(t *testing.T) {
 }
 
 func TestWrap(t *testing.T) {
+	disableTraceStack()
+	defer enableTraceStack()
+
 	t.Run("with nil cause", func(t *testing.T) {
 		assert.Nil(t, Wrap(nil, "foobar"))
+	})
+
+	cause := stderrors.New("the cause")
+	str := "my error message"
+	msg := Msg(str)
+
+	tests := map[string]interface{}{
+		"with Msg":     msg,
+		"with *Msg":    &msg,
+		"with string":  str,
+		"with *string": &str,
+	}
+	for name, input := range tests {
+		t.Run(name, func(t *testing.T) {
+			have := Wrap(cause, input).(*commonError)
+			assert.Equal(t, msg, have.error)
+			assert.Same(t, cause, Unwrap(have))
+			assert.Same(t, have, Unembed(have))
+		})
+	}
+
+	t.Run("with error", func(t *testing.T) {
+		assert.PanicsWithValue(t, panicUseWithKindInstead, func() {
+			_ = Wrap(cause, Kind(str))
+		})
+	})
+
+	tests = map[string]interface{}{
+		"int":                 10,
+		"bool":                false,
+		"*errors.errorString": stderrors.New("not supported"),
+	}
+
+	t.Run("unsupported type", func(t *testing.T) {
+		for typ, input := range tests {
+			t.Run(typ, func(t *testing.T) {
+				assert.PanicsWithValue(t,
+					UnsupportedTypeError{Func: "errors.Wrap", Type: typ},
+					func() { _ = Wrap(cause, input) },
+				)
+			})
+		}
 	})
 }
 

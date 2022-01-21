@@ -12,33 +12,17 @@ import (
 )
 
 func TestWithExitCode(t *testing.T) {
-	tests := map[string]struct {
-		err          error
-		code1, code2 int
-	}{
-		"std error": {
-			err:   stderrors.New("some error"),
-			code1: 1,
-			code2: 2,
-		},
-		"error": {
-			err:   New("absolute horror"),
-			code1: 99,
-			code2: 0,
-		},
-	}
-
-	for name, tc := range tests {
+	for name, wantErr := range provideErrors(true) {
 		t.Run(name, func(t *testing.T) {
-			have := WithExitCode(tc.err, tc.code1)
-			assert.Exactly(t, tc.code1, GetExitCode(have))
-			assert.ErrorIs(t, have, tc.err)
+			haveErr := WithExitCode(wantErr, 123)
+			assert.Exactly(t, 123, GetExitCode(haveErr))
+			assert.ErrorIs(t, haveErr, wantErr)
 
 			// update existing exitcode
 			t.Run("update", func(t *testing.T) {
-				have2 := WithExitCode(have, tc.code2)
-				assert.Exactly(t, tc.code2, GetExitCode(have2))
-				assert.Same(t, have, have2)
+				haveErr2 := WithExitCode(haveErr, 987)
+				assert.Exactly(t, 987, GetExitCode(haveErr2))
+				assert.Same(t, haveErr, haveErr2)
 			})
 		})
 	}

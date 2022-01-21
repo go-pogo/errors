@@ -33,26 +33,33 @@ func Must(args ...interface{}) {
 //      defer func(){ CatchPanic(&err }()
 func CatchPanic(dest *error) {
 	if r := recover(); r != nil {
-		if err, ok := r.(error); ok {
-			Append(dest, WithFormatter(err))
-		} else {
-			Append(dest, newCommonErr(&panicErr{v: r}, false))
-		}
+		Append(dest, newCommonErr(&panicError{v: r}, false))
 		if st := GetStackTrace(*dest); st != nil {
 			st.Skip = 1
 		}
 	}
 }
 
-type panicErr struct{ v interface{} }
+type panicError struct{ v interface{} }
 
-func (e *panicErr) Error() string {
-	switch v := e.v.(type) {
-	case error:
-		return fmt.Sprintf("%+v", e.v)
-	case string:
-		return v
-	default:
-		return fmt.Sprintf("%#v", e.v)
+func (p *panicError) Unwrap() error {
+	if e, ok := p.v.(error); ok {
+		return e
 	}
+	return nil
+}
+
+func (p *panicError) Error() string {
+	switch v := p.v.(type) {
+	case error:
+		return fmt.Sprintf("panic: %+v", p.v)
+	case string:
+		return "panic: " + v
+	default:
+		return fmt.Sprintf("panic: %v", p.v)
+	}
+}
+
+func (p *panicError) GoString() string {
+	return fmt.Sprintf("*panicError{v: %#v}", p.v)
 }
