@@ -140,6 +140,14 @@ func (ce *commonError) StackTrace() *StackTrace { return ce.stack }
 
 func (ce *commonError) Unwrap() error { return ce.cause }
 
+func (ce *commonError) As(target interface{}) bool {
+	if t, ok := target.(*commonError); ok {
+		*t = *ce
+		return true
+	}
+	return false
+}
+
 // Format uses xerrors.FormatError to call the FormatError method of the error
 // with a xerrors.Printer configured according to s and v, and writes the
 // result to s.
