@@ -10,25 +10,22 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/go-pogo/errors/internal"
 )
 
 func TestWrapWrapf(t *testing.T) {
-	internal.DisableCaptureFrames()
-	defer internal.EnableCaptureFrames()
+	disableTraceStack()
+	defer enableTraceStack()
 
 	tests := map[string]struct {
-		message string
-		format  string
-		args    []interface{}
-		cause   error
+		cause           error
+		message, format string
+		args            []interface{}
 	}{
 		"with std error": {
+			cause:   stderrors.New("some err"),
 			message: "foobar",
 			format:  "%s",
 			args:    []interface{}{"foobar"},
-			cause:   stderrors.New("some err"),
 		},
 	}
 
@@ -38,7 +35,7 @@ func TestWrapWrapf(t *testing.T) {
 			assert.Exactly(t, tc.cause, Unwrap(wrap))
 
 			wrapf := Wrapf(tc.cause, tc.format, tc.args...)
-			assert.Exactly(t, wrap, wrapf)
+			assert.Exactly(t, wrap.Error(), wrapf.Error())
 		})
 	}
 
@@ -48,8 +45,53 @@ func TestWrapWrapf(t *testing.T) {
 }
 
 func TestWrap(t *testing.T) {
+	disableTraceStack()
+	defer enableTraceStack()
+
 	t.Run("with nil cause", func(t *testing.T) {
 		assert.Nil(t, Wrap(nil, "foobar"))
+	})
+
+	cause := stderrors.New("the cause")
+	str := "my error message"
+	msg := Msg(str)
+
+	tests := map[string]interface{}{
+		"with Msg":     msg,
+		"with *Msg":    &msg,
+		"with string":  str,
+		"with *string": &str,
+	}
+	for name, input := range tests {
+		t.Run(name, func(t *testing.T) {
+			have := Wrap(cause, input).(*commonError)
+			assert.Equal(t, msg, have.error)
+			assert.Same(t, cause, Unwrap(have))
+			assert.Same(t, have, Unembed(have))
+		})
+	}
+
+	t.Run("with error", func(t *testing.T) {
+		assert.PanicsWithValue(t, panicUseWithKindInstead, func() {
+			_ = Wrap(cause, Kind(str))
+		})
+	})
+
+	tests = map[string]interface{}{
+		"int":                 10,
+		"bool":                false,
+		"*errors.errorString": stderrors.New("not supported"),
+	}
+
+	t.Run("unsupported type", func(t *testing.T) {
+		for typ, input := range tests {
+			t.Run(typ, func(t *testing.T) {
+				assert.PanicsWithValue(t,
+					UnsupportedTypeError{Func: "errors.Wrap", Type: typ},
+					func() { _ = Wrap(cause, input) },
+				)
+			})
+		}
 	})
 }
 
@@ -61,19 +103,12 @@ func TestWrapf(t *testing.T) {
 
 func TestUnwrapAll(t *testing.T) {
 	tests := map[string]func(chain *errChainHelper) error{
-		"nil": func(chain *errChainHelper) error {
-			return Trace(nil)
-		},
 		"std error": func(chain *errChainHelper) error {
 			return chain.prepend(stderrors.New("foo bar"))
 		},
 		"traced std error": func(chain *errChainHelper) error {
-			err := stderrors.New("bar: baz")
-			return chain.prepend(Trace(err))
-		},
-		"double traced std error": func(chain *errChainHelper) error {
-			err := stderrors.New("bar: baz")
-			return chain.prepend(Trace(Trace(err)))
+			err := chain.prepend(stderrors.New("bar: baz"))
+			return chain.prepend(WithStack(err))
 		},
 		"std wrap": func(chain *errChainHelper) error {
 			err := chain.prepend(stderrors.New("foo bar"))
@@ -81,33 +116,24 @@ func TestUnwrapAll(t *testing.T) {
 		},
 		"traced std wrap": func(chain *errChainHelper) error {
 			err := chain.prepend(stderrors.New("foo bar"))
-			wrap := fmt.Errorf("cause: %w", err)
-			return chain.prepend(Trace(wrap))
+			wrap := chain.prepend(fmt.Errorf("cause: %w", err))
+			return chain.prepend(WithStack(wrap))
 		},
 		"error": func(chain *errChainHelper) error {
 			return chain.prepend(New("err msg"))
 		},
 		"traced error": func(chain *errChainHelper) error {
 			err := chain.prepend(New("err msg"))
-			return Trace(err)
-		},
-		"double traced error": func(chain *errChainHelper) error {
-			err := chain.prepend(New("err msg"))
-			return Trace(Trace(err))
+			return WithStack(err)
 		},
 		"wrapped error": func(chain *errChainHelper) error {
 			err := chain.prepend(New("qux"))
 			return chain.prepend(Wrap(err, "bar msg"))
 		},
-		"traced wrapped error": func(chain *errChainHelper) error {
-			err := chain.prepend(New("qux"))
-			err = chain.prepend(Wrap(err, "bar msg"))
-			return Trace(err)
-		},
 	}
 
-	for label, setupFn := range tests {
-		t.Run(label, func(t *testing.T) {
+	for name, setupFn := range tests {
+		t.Run(name, func(t *testing.T) {
 			var chain errChainHelper
 			err := setupFn(&chain)
 			have := UnwrapAll(err)
@@ -116,24 +142,24 @@ func TestUnwrapAll(t *testing.T) {
 			assert.Exactly(t, []error(chain), have)
 		})
 	}
+
+	t.Run("nil", func(t *testing.T) {
+		assert.Exactly(t, []error{}, UnwrapAll(nil))
+	})
 }
 
-func TestRootCause(t *testing.T) {
+func TestCause(t *testing.T) {
 	tests := map[string]struct {
 		want  error
 		setup func(e error) error
 	}{
 		"std error": {
-			want: stderrors.New("foo bar"),
-			setup: func(e error) error {
-				return e
-			},
+			want:  stderrors.New("foo bar"),
+			setup: func(e error) error { return e },
 		},
 		"traced std error": {
-			want: stderrors.New("foo bar"),
-			setup: func(e error) error {
-				return Trace(e)
-			},
+			want:  stderrors.New("foo bar"),
+			setup: func(e error) error { return WithStack(e) },
 		},
 		"std wrap": {
 			want: stderrors.New("foo bar"),
@@ -144,32 +170,22 @@ func TestRootCause(t *testing.T) {
 		"traced std wrap": {
 			want: stderrors.New("baz"),
 			setup: func(e error) error {
-				return Trace(fmt.Errorf("cause: %w", e))
+				return WithStack(fmt.Errorf("cause: %w", e))
 			},
 		},
 		"error": {
-			want: New("xoo"),
-			setup: func(e error) error {
-				return e
-			},
+			want:  New("xoo"),
+			setup: func(e error) error { return e },
 		},
-		"traced error": {
-			want: New("xoo"),
-			setup: func(e error) error {
-				return Trace(e)
-			},
-		},
-		"double traced error": {
-			want: New("xoo"),
-			setup: func(e error) error {
-				return Trace(Trace(e))
-			},
+		"embedded error": {
+			want:  New("xoo"),
+			setup: func(e error) error { return WithExitCode(e, 1) },
 		},
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			have := Original(RootCause(tc.setup(tc.want)))
+			have := Cause(tc.setup(tc.want))
 			assert.Same(t, tc.want, have)
 		})
 	}

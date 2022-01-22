@@ -13,18 +13,18 @@ import (
 // subtasks and, unlike golang.org/x/sync/errgroup.Group, does not cancel the
 // group when an error is encountered.
 type WaitGroup struct {
+	errs List
 	wg   sync.WaitGroup
-	list List
 }
 
 // ErrorList returns a List of collected errors from the called goroutines.
-func (g *WaitGroup) ErrorList() *List { return &g.list }
+func (g *WaitGroup) ErrorList() *List { return &g.errs }
 
 // Wait blocks until all function calls from the Go method have returned, then
 // returns all collected errors as a combined (multi) error.
 func (g *WaitGroup) Wait() error {
 	g.wg.Wait()
-	return g.list.Combine()
+	return g.errs.Combine()
 }
 
 // Go calls the given function in a new goroutine. Errors from all calls are
@@ -32,7 +32,7 @@ func (g *WaitGroup) Wait() error {
 func (g *WaitGroup) Go(fn func() error) {
 	g.wg.Add(1)
 	go func() {
-		g.list.Append(fn())
+		g.errs.Append(fn())
 		g.wg.Done()
 	}()
 }

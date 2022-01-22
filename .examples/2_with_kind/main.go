@@ -10,15 +10,13 @@ import (
 	"github.com/go-pogo/errors"
 )
 
-const someError errors.Kind = "some error"
-
-func someAction() error {
-	return errors.WithKind(errors.New("something happened"), someError)
-}
+const (
+	ErrSomethingWentWrong errors.Msg  = "something went wrong"
+	ActionError           errors.Kind = "action error"
+)
 
 func doSomething() error {
-	err := someAction()
-	return errors.Trace(err)
+	return errors.WithKind(ErrSomethingWentWrong, ActionError)
 }
 
 func main() {

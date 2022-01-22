@@ -9,13 +9,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/go-pogo/errors/internal"
 )
 
 func TestWaitGroup_Go(t *testing.T) {
-	internal.DisableCaptureFrames()
-	defer internal.EnableCaptureFrames()
+	disableTraceStack()
+	defer enableTraceStack()
 
 	want := New("some err")
 	var wg WaitGroup
@@ -49,8 +47,8 @@ func TestWaitGroup_Wait(t *testing.T) {
 		assert.Nil(t, wg.Wait())
 	})
 	t.Run("error", func(t *testing.T) {
-		internal.DisableCaptureFrames()
-		defer internal.EnableCaptureFrames()
+		disableTraceStack()
+		defer enableTraceStack()
 
 		wantErr := New("some err")
 		wg.Go(func() error {

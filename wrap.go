@@ -7,56 +7,86 @@ package errors
 import (
 	stderrors "errors"
 	"fmt"
+	"reflect"
 
 	"golang.org/x/xerrors"
 )
 
-// Wrap creates a new error that wraps around the causing error, thus extending
-// the error chain. It will only create a new error when the provided cause
-// error is not nil, otherwise it will return nil.
-func Wrap(cause error, text string) error {
-	if cause == nil {
-		return nil
+// A Wrapper provides context around another error, which can be retrieved with
+// Unwrap.
+type Wrapper interface {
+	error
+	xerrors.Wrapper
+}
+
+const panicUseWithKindInstead = "errors.Wrap: use errors.WithKind instead to wrap an error with an errors.Kind"
+
+// Wrap creates a new error, which implements the StackTracer, Wrapper and
+// xerrors.Formatter interfaces, that wraps around the causing error. Argument
+// msg can be either a string or Msg.
+//
+//    err = errors.Wrap(err, "my error message")
+//    err = errors.Wrap(err, errors.Msg("my error message"))
+//
+// Wrap records a stack trace at the point it was called. Each call returns a
+// distinct error value even if cause and msg are identical.
+// Wrap will return nil when cause is nil, and it will return the provided cause
+// when msg is nil.
+func Wrap(cause error, msg interface{}) error {
+	if cause == nil || msg == nil {
+		return cause
 	}
 
-	ce := toCommonErr(stderrors.New(text), false)
-	ce.cause = cause
-	ce.Trace(1)
-	return ce
+	var parent error
+	switch v := msg.(type) {
+
+	case string:
+		parent = Msg(v)
+	case *string:
+		parent = Msg(*v)
+
+	case Msg:
+		parent = v
+	case *Msg:
+		parent = *v
+
+	case Kind, *Kind:
+		panic(panicUseWithKindInstead)
+
+	default:
+		panic(UnsupportedTypeError{
+			Func: "errors.Wrap",
+			Type: reflect.TypeOf(v).String(),
+		})
+	}
+
+	return withCause(newCommonErr(parent, true), cause)
 }
 
 // Wrapf formats an error message according to a format specifier and provided
-// arguments and creates a new error the same way Wrap() does.
-func Wrapf(cause error, format string, a ...interface{}) error {
+// arguments with fmt.Errorf, and creates a new error similar to Wrap.
+//
+//    err = errors.Wrapf(err, "my error %s", "message")
+func Wrapf(cause error, format string, args ...interface{}) error {
 	if cause == nil {
 		return nil
 	}
-
-	ce := toCommonErr(fmt.Errorf(format, a...), false)
-	ce.cause = cause
-	ce.Trace(1)
-	return ce
+	return withCause(newCommonErr(fmt.Errorf(format, args...), true), cause)
 }
 
-// An Unwrapper unpacks a wrapped error.
-type Unwrapper interface {
-	error
-	// Unwrap returns the next error in the error chain.
-	// If there is no next error, Unwrap returns nil.
-	Unwrap() (next error)
-}
+// Opaque is an alias of xerrors.Opaque. It returns an error with the same error
+// formatting as err but that does not match err and cannot be unwrapped.
+func Opaque(err error) error { return xerrors.Opaque(err) }
 
 // Unwrap is an alias of errors.Unwrap. It returns the result of calling the
 // Unwrap method on err, if err's type contains an Unwrap method returning
 // error. Otherwise, Unwrap returns nil.
-func Unwrap(err error) error {
-	return stderrors.Unwrap(err)
-}
+func Unwrap(err error) error { return stderrors.Unwrap(err) }
 
 // UnwrapAll returns the complete chain of errors, starting with the supplied
-// error and ending with the (upgraded) root cause error.
+// error and ending with the root cause error.
 func UnwrapAll(err error) []error {
-	var res []error
+	res := make([]error, 0, 6)
 	for {
 		if err == nil {
 			break
@@ -67,13 +97,9 @@ func UnwrapAll(err error) []error {
 	return res
 }
 
-// RootCause walks through all wrapped errors and returns the last (upgraded)
-// error in the chain, which is the root cause error.
-// To get the original non-upgraded root cause error use
-//
-//   Original(RootCause(err))
-//
-func RootCause(err error) error {
+// Cause walks through all wrapped errors and returns the last error in the
+// chain.
+func Cause(err error) error {
 	for {
 		unwrapped := Unwrap(err)
 		if unwrapped == nil {
@@ -85,33 +111,16 @@ func RootCause(err error) error {
 	return err
 }
 
-// Opaque is an alias of xerrors.Opaque. It returns an error with the same error
-// formatting as err but that does not match err and cannot be unwrapped.
-func Opaque(err error) error { return xerrors.Opaque(err) }
-
-// Is is an alias of errors.Is. It reports whether any error in err's chain
-// matches target.
+// Is reports whether any error in err's chain matches target. It is fully
+// compatible with both errors.Is and xerrors.Is.
 //
 // An error is considered to match a target if it is equal to that target or if
 // it implements a method Is(error) bool such that Is(target) returns true.
-func Is(err, target error) bool {
-	return stderrors.Is(Original(err), Original(target))
-}
+func Is(err, target error) bool { return stderrors.Is(err, target) }
 
 // As is an alias of errors.As. It finds the first error in err's chain that
 // matches target, and if so, sets target to that error value and returns true.
-//
-// The chain consists of err itself followed by the sequence of errors obtained by
-// repeatedly calling Unwrap.
-//
-// An error matches target if the error's concrete value is assignable to the value
-// pointed to by target, or if the error has a method As(interface{}) bool such that
-// As(target) returns true. In the latter case, the As method is responsible for
-// setting target.
-//
-// As will panic if target is not a non-nil pointer to either a type that implements
-// error, or to any interface type. As returns false if err is nil.
 func As(err error, target interface{}) bool {
 	//goland:noinspection GoErrorsAs
-	return stderrors.As(err, target)
+	return err != nil && stderrors.As(err, target)
 }

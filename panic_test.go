@@ -5,9 +5,10 @@
 package errors
 
 import (
+	stderrors "errors"
+	"fmt"
 	"testing"
 
-	"github.com/go-pogo/errors/internal"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -55,27 +56,41 @@ func TestMust(t *testing.T) {
 }
 
 func TestCatchPanic(t *testing.T) {
-	internal.DisableCaptureFrames()
-	defer internal.EnableCaptureFrames()
+	disableTraceStack()
+	defer enableTraceStack()
 
-	t.Run("panic string", func(t *testing.T) {
-		var want error
-		defer func() {
-			assert.Equal(t, toCommonErr(&panicErr{"paniek!"}, true), want)
-		}()
-		defer CatchPanic(&want)
-		panic("paniek!")
-	})
+	val := struct{ val string }{val: "some value"}
 
-	t.Run("panic error", func(t *testing.T) {
-		var have, want error
-		defer func() {
-			assert.Same(t, want, have)
-			assert.Equal(t, "panic error", have.Error())
-		}()
-		defer CatchPanic(&want)
-
-		have = New("panic error")
-		panic(have)
-	})
+	tests := map[string]struct {
+		panic   interface{}
+		wantMsg string
+	}{
+		"with string": {
+			panic:   "paniek!",
+			wantMsg: "panic: paniek!",
+		},
+		"with struct": {
+			panic:   val,
+			wantMsg: fmt.Sprintf("panic: %v", val),
+		},
+		"with stderror": {
+			panic:   stderrors.New("nooo!"),
+			wantMsg: "panic: nooo!",
+		},
+		"with error": {
+			panic:   New("panic error"),
+			wantMsg: "panic: panic error",
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			var have error
+			defer func() {
+				assert.Equal(t, newCommonErr(&panicError{tc.panic}, false), have)
+				assert.Equal(t, tc.wantMsg, have.Error())
+			}()
+			defer CatchPanic(&have)
+			panic(tc.panic)
+		})
+	}
 }

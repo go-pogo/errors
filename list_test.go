@@ -9,8 +9,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/go-pogo/errors/internal"
 )
 
 func assertEmptyList(t *testing.T, list *List) {
@@ -91,8 +89,8 @@ func TestList_All(t *testing.T) {
 }
 
 func TestList_Combine(t *testing.T) {
-	internal.DisableCaptureFrames()
-	defer internal.EnableCaptureFrames()
+	disableTraceStack()
+	defer enableTraceStack()
 
 	errs := []error{
 		New("some err"),

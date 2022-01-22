@@ -4,34 +4,37 @@
 
 package errors
 
+import (
+	"fmt"
+)
+
 // ExitCoder interfaces provide access to an exit code.
 type ExitCoder interface {
 	error
 	ExitCode() int
 }
 
+type ExitCoderSetter interface {
+	ExitCoder
+	SetExitCode(int)
+}
+
 // WithExitCode adds an exit status code to the error which may indicate a
 // fatal error. The exit code can be supplied to os.Exit to terminate the
 // program immediately.
-func WithExitCode(parent error, exitCode int) ExitCoder {
-	if parent == nil {
+func WithExitCode(err error, exitCode int) ExitCoder {
+	if err == nil {
 		return nil
 	}
 
-	switch e := parent.(type) {
-	case *exitCodeErr:
-		e.exitCode = exitCode
+	if e, ok := err.(ExitCoderSetter); ok {
+		e.SetExitCode(exitCode)
 		return e
-
-	case UpgradedError:
-		ce := toCommonErr(parent, true)
-		ce.exitCode = exitCode
-		return ce
 	}
 
-	return &exitCodeErr{
-		error:    parent,
-		exitCode: exitCode,
+	return &exitCodeError{
+		embedError: &embedError{error: err},
+		exitCode:   exitCode,
 	}
 }
 
@@ -39,20 +42,35 @@ func WithExitCode(parent error, exitCode int) ExitCoder {
 // ExitCoder interface. If not, it returns 0.
 func GetExitCode(err error) int { return GetExitCodeOr(err, 0) }
 
-// GetExitCodeOr returns an exit status code if the error implements the
-// ExitCoder interface. If not, it returns the provided value or.
+// GetExitCodeOr returns the exit status code from the first found ExitCoder
+// in err's error chain. If none is found, it returns the provided value or.
 func GetExitCodeOr(err error, or int) int {
-	if e, ok := err.(ExitCoder); ok {
-		return e.ExitCode()
+	for {
+		if e, ok := err.(ExitCoder); ok {
+			return e.ExitCode()
+		}
+		err = Unwrap(err)
+		if err == nil {
+			break
+		}
 	}
+
 	return or
 }
 
-type exitCodeErr struct {
-	error
+type exitCodeError struct {
+	*embedError
 	exitCode int
 }
 
-func (e *exitCodeErr) Original() error { return e.error }
-func (e *exitCodeErr) ExitCode() int   { return e.exitCode }
-func (e *exitCodeErr) Error() string   { return errMsg(e.error.Error(), UnknownKind, e.exitCode) }
+func (e *exitCodeError) SetExitCode(c int) { e.exitCode = c }
+func (e *exitCodeError) ExitCode() int     { return e.exitCode }
+
+// GoString prints the error in basic Go syntax.
+func (e *exitCodeError) GoString() string {
+	return fmt.Sprintf(
+		"*exitCodeError{exitCode: %d, embedErr: %#v}",
+		e.exitCode,
+		e.error,
+	)
+}

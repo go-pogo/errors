@@ -158,9 +158,41 @@ func TestAppend(t *testing.T) {
 
 		multi := have.(*multiErr)
 		assert.Exactly(t, errs, multi.Errors())
-		assert.Equal(t, len(multi.frames), 1)
 
-		_, file, line, _ := runtime.Caller(0)
-		assert.Contains(t, multi.StackFrames().String(), fmt.Sprintf("%s:%d", file, line-9))
+		if traceStack {
+			assert.Equal(t, len(multi.stack.frames), 1)
+
+			_, file, line, _ := runtime.Caller(0)
+			// line must point to the last Append call a couple of lines above
+			assert.Contains(t, multi.StackTrace().String(), fmt.Sprintf("%s:%d", file, line-11))
+		}
 	})
+}
+
+func TestMultiErr_Is(t *testing.T) {
+	disableTraceStack()
+	defer enableTraceStack()
+
+	err1 := stderrors.New("some err")
+	err2 := New("whoops")
+	multi := newMultiErr([]error{err2, err1}, 0)
+	assert.True(t, multi.Is(err1))
+	assert.True(t, multi.Is(err2))
+	assert.False(t, multi.Is(stderrors.New("some err")))
+}
+
+func TestMultiErr_As(t *testing.T) {
+	disableTraceStack()
+	defer enableTraceStack()
+
+	err1 := stderrors.New("some err")
+	err2 := New("whoops")
+	multi := newMultiErr([]error{err2, err1}, 0)
+
+	var have commonError
+	assert.True(t, multi.As(&have))
+	assert.Equal(t, err2, &have)
+
+	var have2 Msg
+	assert.False(t, multi.As(&have2))
 }
