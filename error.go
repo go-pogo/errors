@@ -138,7 +138,16 @@ func withPossibleCause(ce *commonError) *commonError {
 
 func (ce *commonError) StackTrace() *StackTrace { return ce.stack }
 
+// Unwrap returns the next error in the error chain. It returns nil if there
+// is not a next error.
 func (ce *commonError) Unwrap() error { return ce.cause }
+
+func (ce *commonError) Is(target error) bool {
+	if m, ok := ce.error.(Msg); ok {
+		return m.Is(target)
+	}
+	return false
+}
 
 func (ce *commonError) As(target interface{}) bool {
 	if t, ok := target.(*commonError); ok {

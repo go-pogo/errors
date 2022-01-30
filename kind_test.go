@@ -17,6 +17,19 @@ func TestKind(t *testing.T) {
 	assert.Equal(t, kind.String(), kind.Error())
 }
 
+func TestKindf(t *testing.T) {
+	tests := map[string][]interface{}{
+		"no args": nil,
+		"some %s": {"string"},
+		"%s %s":   {"foo", "bar"},
+	}
+	for f, a := range tests {
+		t.Run(f, func(t *testing.T) {
+			assert.Equal(t, Kind(fmt.Sprintf(f, a...)), Kindf(f, a...))
+		})
+	}
+}
+
 func TestKind_Is(t *testing.T) {
 	t.Run("true", func(t *testing.T) {
 		kind := Kind("foobar")
