@@ -120,15 +120,16 @@ func TestMsg(t *testing.T) {
 
 func TestMsg_Is(t *testing.T) {
 	t.Run("true", func(t *testing.T) {
-		msg := Msg("some err")
+		m := Msg("some err")
 		tests := map[string]error{
 			"Msg":  Msg("some err"),
-			"*Msg": &msg,
+			"*Msg": &m,
 		}
-		for a, err := range tests {
+		for a, msg := range tests {
 			for b, target := range tests {
 				t.Run(a+"/"+b, func(t *testing.T) {
-					assert.ErrorIs(t, err, target)
+					assert.ErrorIs(t, msg, target)
+					assert.ErrorIs(t, New(msg), target)
 				})
 			}
 		}
