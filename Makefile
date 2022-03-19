@@ -5,9 +5,9 @@ EXAMPLE4=4_custom_error
 EXAMPLE5=5_multi_error
 EXAMPLE6=6_catch_panic
 
-example%:
+x%:
 	go run -race ./.examples/$(EXAMPLE$(*))/main.go
 
 vet:
-# go install golang.org/x/tools/go/analysis/passes/fieldalignment/cmd/fieldalignment
+# go install golang.org/x/tools/go/analysis/passes/fieldalignment/cmd/fieldalignment@latest
 	go vet -vettool=$(shell where fieldalignment) ./...
