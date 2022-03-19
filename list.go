@@ -50,6 +50,9 @@ func (l *List) All() []error {
 // Len returns the number of errors within the List.
 func (l *List) Len() int { return len(l.list) }
 
+// Empty return true when the list is empty.
+func (l *List) Empty() bool { return len(l.list) > 0 }
+
 // Append an error to the list. It guarantees only non-nil errors are added.
 // It returns false when a nil error is encountered. And true when the error
 // is appended to the list.
