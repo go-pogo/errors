@@ -20,12 +20,6 @@ const UnknownKind Kind = ""
 // It is recommended to define each Kind as a constant.
 type Kind string
 
-// Kindf formats according to a format specifier using fmt.Sprintf, and returns
-// the resulting string as Kind.
-func Kindf(format string, args ...interface{}) Kind {
-	return Kind(fmt.Sprintf(format, args...))
-}
-
 func (k Kind) Is(target error) bool {
 	switch t := target.(type) {
 	case Kind:
