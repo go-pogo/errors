@@ -73,10 +73,14 @@ func TestNew(t *testing.T) {
 		})
 	}
 
-	t.Run("with error", func(t *testing.T) {
+	t.Run("with std error", func(t *testing.T) {
 		assert.PanicsWithValue(t, panicUseWithStackInstead, func() {
 			_ = New(stderrors.New(str))
 		})
+	})
+	t.Run("with error", func(t *testing.T) {
+		err := New("some err")
+		assert.Same(t, err, New(err))
 	})
 
 	tests = map[string]interface{}{

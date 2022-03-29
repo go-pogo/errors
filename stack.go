@@ -28,22 +28,22 @@ func WithStack(err error) StackTracer {
 		return nil
 	}
 
-	switch err := err.(type) {
+	switch v := err.(type) {
 	case StackTracer:
-		return err
+		return v
 
 	case Msg, *Msg:
 		panic(panicUseNewInstead)
 
 	default:
-		e := &embedError{error: err}
+		ee := &embedError{error: v}
 		if traceStack {
-			e.stack = newStackTrace(1)
-			if u := Unwrap(err); u != nil {
-				skipStackTrace(u, e.stack.Len())
+			ee.stack = newStackTrace(1)
+			if u := Unwrap(v); u != nil {
+				skipStackTrace(u, ee.stack.Len())
 			}
 		}
-		return e
+		return ee
 	}
 }
 

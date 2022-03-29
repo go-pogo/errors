@@ -52,9 +52,15 @@ func combine(errors []error) error {
 	return newMultiErr(errors, 2)
 }
 
-const panicAppendNilPtr = "errors.Append: dest must not be a nil pointer"
+const (
+	panicAppendNilPtr     = "errors.Append: dest must not be a nil pointer"
+	panicAppendFuncNilPtr = "errors.AppendFunc: dest must not be a nil pointer"
+	panicAppendFuncNilFn  = "errors.AppendFunc: fn must not be nil"
+)
 
 // Append appends multiple non-nil errors to a single multi error dest.
+// When the value of dest is nil and errs only contains a single error, its
+// value is set to the value of dest.
 //
 // Important: when using Append with defer, the pointer to the dest error
 // must be a named return variable. For additional details see
@@ -83,6 +89,17 @@ func Append(dest *error, errs ...error) {
 			*dest = newMultiErr([]error{*dest, err}, 1)
 		}
 	}
+}
+
+// AppendFunc appends the non-nil error result of fn to dest using Append.
+func AppendFunc(dest *error, fn func() error) {
+	if dest == nil {
+		panic(panicAppendFuncNilPtr)
+	}
+	if fn == nil {
+		panic(panicAppendFuncNilFn)
+	}
+	Append(dest, fn())
 }
 
 type multiErr struct {
