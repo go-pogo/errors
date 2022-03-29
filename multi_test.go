@@ -169,6 +169,27 @@ func TestAppend(t *testing.T) {
 	})
 }
 
+func TestAppendFunc(t *testing.T) {
+	t.Run("panic on nil dest ptr", func(t *testing.T) {
+		assert.PanicsWithValue(t, panicAppendFuncNilPtr, func() {
+			AppendFunc(nil, func() error { return New("bar") })
+		})
+	})
+	t.Run("panic on nil func", func(t *testing.T) {
+		assert.PanicsWithValue(t, panicAppendFuncNilFn, func() {
+			var err error
+			AppendFunc(&err, nil)
+		})
+	})
+	t.Run("with error", func(t *testing.T) {
+		var have error
+		want := stderrors.New("foobar")
+		AppendFunc(&have, func() error { return want })
+
+		assert.Same(t, want, have)
+	})
+}
+
 func TestMultiErr_Is(t *testing.T) {
 	disableTraceStack()
 	defer enableTraceStack()
