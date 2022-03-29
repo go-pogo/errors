@@ -42,18 +42,19 @@ func New(msg interface{}) error {
 		return nil
 	}
 
-	var parent error
 	switch v := msg.(type) {
+	case *commonError:
+		return v
 
 	case string:
-		parent = Msg(v)
+		return newCommonErr(Msg(v), true)
 	case *string:
-		parent = Msg(*v)
+		return newCommonErr(Msg(*v), true)
 
 	case Msg:
-		parent = v
+		return newCommonErr(v, true)
 	case *Msg:
-		parent = *v
+		return newCommonErr(*v, true)
 
 	case error:
 		panic(panicUseWithStackInstead)
@@ -64,8 +65,6 @@ func New(msg interface{}) error {
 			Type: reflect.TypeOf(v).String(),
 		})
 	}
-
-	return newCommonErr(parent, true)
 }
 
 // Newf formats an error message according to a format specifier and provided
