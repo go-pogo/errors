@@ -46,6 +46,8 @@ func New(msg interface{}) error {
 	switch v := msg.(type) {
 	case *commonError:
 		return v
+	case *embedError:
+		return v
 
 	case string:
 		return newCommonErr(Msg(v), true)
