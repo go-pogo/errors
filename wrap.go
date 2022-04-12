@@ -22,8 +22,8 @@ type Wrapper interface {
 const panicUseWithKindInstead = "errors.Wrap: use errors.WithKind instead to wrap an error with an errors.Kind"
 
 // Wrap creates a new error, which implements the StackTracer, Wrapper and
-// xerrors.Formatter interfaces, that wraps around the causing error. Argument
-// msg can be either a string or Msg.
+// Formatter interfaces, that wraps around the causing error. Argument msg can
+// be either a string or Msg.
 //
 //    err = errors.Wrap(err, "my error message")
 //    err = errors.Wrap(err, errors.Msg("my error message"))

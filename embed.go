@@ -47,15 +47,14 @@ func (e *embedError) Unembed() error { return e.error }
 func (e *embedError) Unwrap() error { return e.error }
 
 // Format uses xerrors.FormatError to call the FormatError method of the error
-// with a xerrors.Printer configured according to s and v, and writes the
-// result to s.
+// with a Printer configured according to s and v, and writes the result to s.
 func (e *embedError) Format(s fmt.State, v rune) {
 	xerrors.FormatError(e, s, v)
 }
 
-// FormatError prints the error to the xerrors.Printer using PrintError and
-// returns the next error in the error chain, if any.
-func (e *embedError) FormatError(p xerrors.Printer) error {
+// FormatError prints the error to the Printer using PrintError and returns the
+// next error in the error chain, if any.
+func (e *embedError) FormatError(p Printer) error {
 	PrintError(p, e)
 	return Unwrap(Unembed(e.error))
 }
