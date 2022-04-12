@@ -145,12 +145,11 @@ func (m *multiErr) As(target interface{}) bool {
 }
 
 // Format uses xerrors.FormatError to call the FormatError method of the error
-// with a xerrors.Printer configured according to s and v, and writes the
-// result to s.
+// with a Printer configured according to s and v, and writes the result to s.
 func (m *multiErr) Format(s fmt.State, v rune) { xerrors.FormatError(m, s, v) }
 
 // FormatError prints a summary of the encountered errors to p.
-func (m *multiErr) FormatError(p xerrors.Printer) error {
+func (m *multiErr) FormatError(p Printer) error {
 	p.Print(m.Error())
 	if p.Detail() {
 		m.stack.Format(p)

@@ -29,15 +29,15 @@ type Msg string
 const panicUseWithStackInstead = "errors.New: use errors.WithStack instead to wrap an error with an errors.StackTracer and xerrors.Formatter"
 
 // New creates a new error which implements the StackTracer, Wrapper and
-// xerrors.Formatter interfaces. Argument msg can be either a string or Msg.
+// Formatter interfaces. Argument msg can be either a string or Msg.
 //
 //    err := errors.New("my error message")
 //    err := errors.New(errors.Msg("my error message"))
 //
 // New records a stack trace at the point it was called. Each call returns a
 // distinct error value even if msg is identical. It will return nil if msg is
-// nil. Use WithStack to wrap an existing error with a StackTracer and
-// xerrors.Formatter.
+// nil.
+// Use WithStack to wrap an existing error with a StackTracer and Formatter.
 func New(msg interface{}) error {
 	if msg == nil {
 		return nil
@@ -160,15 +160,14 @@ func (ce *commonError) As(target interface{}) bool {
 }
 
 // Format uses xerrors.FormatError to call the FormatError method of the error
-// with a xerrors.Printer configured according to s and v, and writes the
-// result to s.
+// with a Printer configured according to s and v, and writes the result to s.
 func (ce *commonError) Format(s fmt.State, v rune) {
 	xerrors.FormatError(ce, s, v)
 }
 
-// FormatError prints the error to the xerrors.Printer using PrintError and
-// returns the next error in the error chain, if any.
-func (ce *commonError) FormatError(p xerrors.Printer) error {
+// FormatError prints the error to the Printer using PrintError and returns the
+// next error in the error chain, if any.
+func (ce *commonError) FormatError(p Printer) error {
 	PrintError(p, ce)
 	return ce.cause
 }
