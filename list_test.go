@@ -14,11 +14,7 @@ import (
 func assertEmptyList(t *testing.T, list *List) {
 	assert.Len(t, list.list, 0)
 	assert.Exactly(t, []error{}, list.All())
-}
-
-func assertListLen(t *testing.T, list *List, length int) {
-	assert.Len(t, list.list, length)
-	assert.Exactly(t, len(list.All()), list.Len())
+	assert.True(t, list.Empty())
 }
 
 func TestNewList(t *testing.T) {
@@ -63,7 +59,7 @@ func TestList_All(t *testing.T) {
 		assertEmptyList(t, &list)
 
 		list.Append(nil)
-		assertListLen(t, &list, 0)
+		assertEmptyList(t, &list)
 	})
 	t.Run("error", func(t *testing.T) {
 		var list List
