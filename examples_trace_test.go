@@ -15,7 +15,7 @@ import (
 	"strings"
 )
 
-func ExamplePrintWithDetails() {
+func ExampleNew2() {
 	doSomething := func() error {
 		return New("something happened")
 	}
@@ -25,7 +25,7 @@ func ExamplePrintWithDetails() {
 	fmt.Printf("%+v\n", err)
 	// Output:
 	// something happened:
-	//     github.com/go-pogo/errors.ExamplePrintWithDetails
+	//     github.com/go-pogo/errors.ExampleNew2
 	//         /path/to/errors/examples_trace_test.go:23
 	//     github.com/go-pogo/errors.ExamplePrintWithDetails.func1
 	//         /path/to/errors/examples_trace_test.go:20

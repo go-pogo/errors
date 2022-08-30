@@ -19,7 +19,7 @@ func ExampleNew() {
 	// Output: something happened
 }
 
-func ExampleNewWithMsg() {
+func ExampleMsg() {
 	const ErrSomethingHappened Msg = "something happened"
 
 	doSomething := func() error {
