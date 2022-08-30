@@ -15,7 +15,7 @@ import (
 	"strings"
 )
 
-func ExampleNew2() {
+func ExampleFormatError() {
 	doSomething := func() error {
 		return New("something happened")
 	}
