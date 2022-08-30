@@ -25,9 +25,9 @@ func ExampleFormatError() {
 	fmt.Printf("%+v\n", err)
 	// Output:
 	// something happened:
-	//     github.com/go-pogo/errors.ExampleNew2
+	//     github.com/go-pogo/errors.ExampleFormatError
 	//         /path/to/errors/examples_trace_test.go:23
-	//     github.com/go-pogo/errors.ExamplePrintWithDetails.func1
+	//     github.com/go-pogo/errors.ExampleFormatError.func1
 	//         /path/to/errors/examples_trace_test.go:20
 }
 
