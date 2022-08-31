@@ -38,6 +38,9 @@ func Filter(errors []error) []error {
 // It returns a single error when only one error is passed, and nil if no
 // non-nil errors are provided.
 func Combine(errors ...error) error {
+	if len(errors) == 0 {
+		return nil
+	}
 	return combine(Filter(errors))
 }
 
