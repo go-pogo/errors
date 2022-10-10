@@ -20,16 +20,22 @@ type List struct {
 	sync.RWMutex
 }
 
-const panicNewListArgs = "errors.NewList: only one argument is allowed"
+const (
+	panicNewListCap  = "errors.NewList: cap cannot be below 0"
+	panicNewListArgs = "errors.NewList: only one argument is allowed"
+)
 
 // NewList creates a new List with a pre-allocated capacity of cap.
-func NewList(cap ...uint) *List {
+func NewList(cap ...int) *List {
 	var c int
 	switch len(cap) {
 	case 0:
 		c = int(DefaultListCapacity)
 	case 1:
-		c = int(cap[0])
+		c = cap[0]
+		if c < 0 {
+			panic(panicNewListCap)
+		}
 	default:
 		panic(panicNewListArgs)
 	}
