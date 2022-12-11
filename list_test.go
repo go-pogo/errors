@@ -84,7 +84,7 @@ func TestList_All(t *testing.T) {
 	})
 }
 
-func TestList_Combine(t *testing.T) {
+func TestList_Join(t *testing.T) {
 	disableTraceStack()
 	defer enableTraceStack()
 
@@ -99,9 +99,7 @@ func TestList_Combine(t *testing.T) {
 		list.Append(e)
 	}
 
-	multi := list.Combine().(MultiError)
-	assert.Exactly(t, []error{errs[0], errs[2]}, multi.Errors())
-
-	combined := Combine(errs...)
-	assert.Equal(t, combined, multi)
+	multi := list.Join().(MultiError)
+	assert.Exactly(t, []error{errs[0], errs[2]}, multi.Unwrap())
+	assert.Equal(t, Join(errs...), multi)
 }

@@ -13,6 +13,8 @@ import (
 
 type MultiError interface {
 	error
+	Unwrap() []error
+	// Deprecated: Use Unwrap instead.
 	Errors() []error
 }
 
@@ -34,25 +36,32 @@ func Filter(errors []error) []error {
 	return errors[:n]
 }
 
-// Combine returns a MultiError when more than one non-nil errors are provided.
+// Join returns a MultiError when more than one non-nil errors are provided.
 // It returns a single error when only one error is passed, and nil if no
 // non-nil errors are provided.
-func Combine(errors ...error) error {
-	if len(errors) == 0 {
+func Join(errs ...error) error {
+	if len(errs) == 0 {
 		return nil
 	}
-	return combine(Filter(errors))
+	return combine(Filter(errs))
 }
 
-func combine(errors []error) error {
-	switch len(errors) {
+// Combine returns a MultiError when more than one non-nil errors are provided.
+// // It returns a single error when only one error is passed, and nil if no
+// // non-nil errors are provided.
+//
+// Deprecated: Use Join instead.
+func Combine(errs ...error) error { return Join(errs...) }
+
+func combine(errs []error) error {
+	switch len(errs) {
 	case 0:
 		return nil
 	case 1:
-		return errors[0]
+		return errs[0]
 	}
 
-	return newMultiErr(errors, 2)
+	return newMultiErr(errs, 2)
 }
 
 const (
@@ -124,28 +133,15 @@ func newMultiErr(errors []error, skipFrames uint) *multiErr {
 	return m
 }
 
+// Unwrap returns the errors within the multi error.
+func (m *multiErr) Unwrap() []error { return m.errors }
+
 // Errors returns the errors within the multi error.
+//
+// Deprecated: Use Unwrap instead.
 func (m *multiErr) Errors() []error { return m.errors }
 
 func (m *multiErr) StackTrace() *StackTrace { return m.stack }
-
-func (m *multiErr) Is(target error) bool {
-	for _, err := range m.errors {
-		if Is(err, target) {
-			return true
-		}
-	}
-	return false
-}
-
-func (m *multiErr) As(target interface{}) bool {
-	for _, err := range m.errors {
-		if As(err, target) {
-			return true
-		}
-	}
-	return false
-}
 
 // Format uses xerrors.FormatError to call the FormatError method of the error
 // with a Printer configured according to s and v, and writes the result to s.

@@ -109,17 +109,17 @@ func BenchmarkFilter(b *testing.B) {
 	}
 }
 
-func TestCombine(t *testing.T) {
+func TestJoin(t *testing.T) {
 	t.Run("with empty and nil", func(t *testing.T) {
-		assert.Nil(t, Combine())
-		assert.Nil(t, Combine(nil))
+		assert.Nil(t, Join())
+		assert.Nil(t, Join(nil))
 	})
 	t.Run("with errors", func(t *testing.T) {
 		err1 := stderrors.New("first error")
 		err2 := Newf("err with trace")
-		multi := Combine(err1, err2).(*multiErr)
+		multi := Join(err1, err2).(*multiErr)
 
-		assert.Exactly(t, []error{err1, err2}, multi.Errors())
+		assert.Exactly(t, []error{err1, err2}, multi.Unwrap())
 	})
 }
 
@@ -157,7 +157,7 @@ func TestAppend(t *testing.T) {
 		assert.IsType(t, new(multiErr), have)
 
 		multi := have.(*multiErr)
-		assert.Exactly(t, errs, multi.Errors())
+		assert.Exactly(t, errs, multi.Unwrap())
 
 		if traceStack {
 			assert.Equal(t, len(multi.stack.frames), 1)
@@ -188,32 +188,4 @@ func TestAppendFunc(t *testing.T) {
 
 		assert.Same(t, want, have)
 	})
-}
-
-func TestMultiErr_Is(t *testing.T) {
-	disableTraceStack()
-	defer enableTraceStack()
-
-	err1 := stderrors.New("some err")
-	err2 := New("whoops")
-	multi := newMultiErr([]error{err2, err1}, 0)
-	assert.True(t, multi.Is(err1))
-	assert.True(t, multi.Is(err2))
-	assert.False(t, multi.Is(stderrors.New("some err")))
-}
-
-func TestMultiErr_As(t *testing.T) {
-	disableTraceStack()
-	defer enableTraceStack()
-
-	err1 := stderrors.New("some err")
-	err2 := New("whoops")
-	multi := newMultiErr([]error{err2, err1}, 0)
-
-	var have commonError
-	assert.True(t, multi.As(&have))
-	assert.Equal(t, err2, &have)
-
-	var have2 Msg
-	assert.False(t, multi.As(&have2))
 }

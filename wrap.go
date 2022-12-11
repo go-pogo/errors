@@ -25,8 +25,8 @@ const panicUseWithKindInstead = "errors.Wrap: use errors.WithKind instead to wra
 // Formatter interfaces, that wraps around the causing error. Argument msg can
 // be either a string or Msg.
 //
-//    err = errors.Wrap(err, "my error message")
-//    err = errors.Wrap(err, errors.Msg("my error message"))
+//	err = errors.Wrap(err, "my error message")
+//	err = errors.Wrap(err, errors.Msg("my error message"))
 //
 // Wrap records a stack trace at the point it was called. Each call returns a
 // distinct error value even if cause and msg are identical.
@@ -66,7 +66,7 @@ func Wrap(cause error, msg interface{}) error {
 // Wrapf formats an error message according to a format specifier and provided
 // arguments with fmt.Errorf, and creates a new error similar to Wrap.
 //
-//    err = errors.Wrapf(err, "my error %s", "message")
+//	err = errors.Wrapf(err, "my error %s", "message")
 func Wrapf(cause error, format string, args ...interface{}) error {
 	if cause == nil {
 		return nil

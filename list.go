@@ -96,12 +96,18 @@ func prepend(errs []error, err error) []error {
 	return errs
 }
 
-// Combine the collected errors. It uses the same rules and logic as the
-// Combine function.
-func (l *List) Combine() error {
+// Join the collected errors. It uses the same rules and logic as the
+// Join function.
+func (l *List) Join() error {
 	l.RLock()
 	err := combine(l.list)
 	l.RUnlock()
 
 	return err
 }
+
+// Combine joins the collected errors. It uses the same rules and logic as the
+// Join function.
+//
+// Deprecated: Use Join instead.
+func (l *List) Combine() error { return l.Join() }

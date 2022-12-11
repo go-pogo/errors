@@ -87,6 +87,18 @@ func TestIs(t *testing.T) {
 		assert.ErrorIs(t, withKind, withFormatter)
 		assert.ErrorIs(t, withFormatter, withKind)
 	})
+
+	t.Run("multi", func(t *testing.T) {
+		disableTraceStack()
+		defer enableTraceStack()
+
+		err1 := stderrors.New("some err")
+		err2 := New("whoops")
+		multi := newMultiErr([]error{err2, err1}, 0)
+		assert.True(t, Is(multi, err1))
+		assert.True(t, Is(multi, err2))
+		assert.False(t, Is(multi, stderrors.New("some err")))
+	})
 }
 
 type customError struct{}
@@ -135,4 +147,20 @@ func TestAs(t *testing.T) {
 			assert.Equal(t, want, got)
 		})
 	}
+
+	t.Run("multi", func(t *testing.T) {
+		disableTraceStack()
+		defer enableTraceStack()
+
+		err1 := stderrors.New("some err")
+		err2 := New("whoops")
+		multi := newMultiErr([]error{err2, err1}, 0)
+
+		var have commonError
+		assert.True(t, As(multi, &have))
+		assert.Equal(t, err2, &have)
+
+		var have2 Msg
+		assert.False(t, As(multi, &have2))
+	})
 }

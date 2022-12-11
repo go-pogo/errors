@@ -21,10 +21,10 @@ type WaitGroup struct {
 func (g *WaitGroup) ErrorList() *List { return &g.errs }
 
 // Wait blocks until all function calls from the Go method have returned, then
-// returns all collected errors as a combined (multi) error.
+// returns all collected errors as a (multi) error.
 func (g *WaitGroup) Wait() error {
 	g.wg.Wait()
-	return g.errs.Combine()
+	return g.errs.Join()
 }
 
 // Go calls the given function in a new goroutine. Errors from all calls are
