@@ -11,7 +11,7 @@ errors
 
 [build-status-img]: https://github.com/go-pogo/errors/workflows/Test/badge.svg
 
-[build-status-url]: https://github.com/go-pogo/errors/actions?query=workflow%3ATest
+[build-status-url]: https://github.com/go-pogo/errors/actions/workflows/test.yml
 
 [report-img]: https://goreportcard.com/badge/github.com/go-pogo/errors
 
@@ -68,7 +68,6 @@ A convenient function is available to catch panics and store them as an error.
 var err error
 defer errors.CatchPanic(&err)
 ```
-
 
 ## Documentation
 Additional detailed documentation is available at [pkg.go.dev][doc-url]
