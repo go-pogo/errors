@@ -12,23 +12,28 @@ import (
 )
 
 func assertEmptyList(t *testing.T, list *List) {
-	assert.Len(t, list.list, 0)
 	assert.Exactly(t, []error{}, list.All())
+	assert.Exactly(t, 0, list.Len())
 	assert.True(t, list.Empty())
 }
 
 func TestNewList(t *testing.T) {
-	t.Run("0 args", func(t *testing.T) {
+	t.Run("default capacity", func(t *testing.T) {
 		list := NewList()
 		assert.Exactly(t, int(DefaultListCapacity), cap(list.list))
 		assertEmptyList(t, list)
 	})
-	t.Run("1 arg", func(t *testing.T) {
+	t.Run("set capacity", func(t *testing.T) {
 		list := NewList(22)
 		assert.Equal(t, 22, cap(list.list))
 		assertEmptyList(t, list)
 	})
-	t.Run("2 args", func(t *testing.T) {
+	t.Run("negative capacity", func(t *testing.T) {
+		assert.PanicsWithValue(t, panicNewListCap, func() {
+			_ = NewList(-1)
+		})
+	})
+	t.Run("too much arguments", func(t *testing.T) {
 		assert.PanicsWithValue(t, panicNewListArgs, func() {
 			_ = NewList(1, 2)
 		})
@@ -37,10 +42,14 @@ func TestNewList(t *testing.T) {
 
 func TestList_Append(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
-		assert.False(t, NewList().Append(nil))
+		list := NewList()
+		assert.False(t, list.Append(nil))
+		assertEmptyList(t, list)
 	})
 	t.Run("error", func(t *testing.T) {
-		assert.True(t, NewList().Append(New("some err")))
+		list := NewList()
+		assert.True(t, list.Append(New("some err")))
+		assert.Equal(t, 1, list.Len())
 	})
 }
 
