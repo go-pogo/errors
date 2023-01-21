@@ -26,8 +26,7 @@ Package `errors` contains additional functions, interfaces and structs for recor
 applying basic formatting, working with goroutines, multiple errors and custom error types.
 
 It is inspired by the `golang.org/x/xerrors` package and is designed to be a drop in replacement for
-it, as well as the standard library's `errors`
-package.
+it, as well as the standard library's `errors` package.
 
 ```sh
 go get github.com/go-pogo/errors
@@ -76,6 +75,6 @@ Additional detailed documentation is available at [pkg.go.dev][doc-url]
 <a href="https://www.jetbrains.com/?from=go-pogo" target="_blank"><img src="https://resources.jetbrains.com/storage/products/company/brand/logos/GoLand_icon.png" width="35" /></a>
 
 ## License
-Copyright © 2019-2022 [Roel Schut](https://roelschut.nl). All rights reserved.
+Copyright © 2019-2023 [Roel Schut](https://roelschut.nl). All rights reserved.
 
 This project is governed by a BSD-style license that can be found in the [LICENSE](LICENSE) file.
