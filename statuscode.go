@@ -8,25 +8,25 @@ import (
 	"fmt"
 )
 
-// StatusCode interfaces provide access to a (http) status code.
-type StatusCode interface {
+// StatusCoder interfaces provide access to a (http) status code.
+type StatusCoder interface {
 	error
 	StatusCode() int
 }
 
-type StatusCodeSetter interface {
-	StatusCode
+type StatusCoderSetter interface {
+	StatusCoder
 	SetStatusCode(int)
 }
 
 // WithStatusCode adds a (http) status code to the error which can be retrieved
 // using GetStatusCode and may be set to a http.ResponseWriter.
-func WithStatusCode(err error, statusCode int) StatusCode {
+func WithStatusCode(err error, statusCode int) StatusCoder {
 	if err == nil {
 		return nil
 	}
 
-	if e, ok := err.(StatusCodeSetter); ok {
+	if e, ok := err.(StatusCoderSetter); ok {
 		e.SetStatusCode(statusCode)
 		return e
 	}
@@ -37,15 +37,15 @@ func WithStatusCode(err error, statusCode int) StatusCode {
 	}
 }
 
-// GetStatusCode returns the status code if the error implements the StatusCode
+// GetStatusCode returns the status code if the error implements the StatusCoder
 // interface. If not, it returns 0.
 func GetStatusCode(err error) int { return GetStatusCodeOr(err, 0) }
 
-// GetStatusCodeOr returns the status code from the first found StatusCode
+// GetStatusCodeOr returns the status code from the first found StatusCoder
 // in err's error chain. If none is found, it returns the provided value or.
 func GetStatusCodeOr(err error, or int) int {
 	for {
-		if e, ok := err.(StatusCode); ok {
+		if e, ok := err.(StatusCoder); ok {
 			return e.StatusCode()
 		}
 		err = Unwrap(err)
