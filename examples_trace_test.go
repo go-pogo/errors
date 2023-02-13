@@ -9,7 +9,7 @@ package errors
 
 import (
 	"encoding/json"
-	stdfmt "fmt"
+	fmtpkg "fmt"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -70,9 +70,9 @@ func (fmt *ignoreThisLineUseFmtPackageInActualCode) Printf(format string, err er
 	_, f, _, _ := runtime.Caller(0)
 	f = strings.ReplaceAll(filepath.Dir(f), "\\", "/")
 
-	output := stdfmt.Sprintf(format, err)
+	output := fmtpkg.Sprintf(format, err)
 
 	// normalize file paths of stack trace entries
 	output = strings.ReplaceAll(output, f, "/path/to/errors")
-	stdfmt.Println(output)
+	fmtpkg.Println(output)
 }

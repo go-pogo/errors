@@ -46,6 +46,29 @@ func BenchmarkNew(b *testing.B) {
 	})
 }
 
+func BenchmarkMultiErr_Error(b *testing.B) {
+	const msg Msg = "some error"
+
+	b.Run("errors.Msg", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			_ = New(msg)
+		}
+	})
+	b.Run("stdlib", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			_ = stderrors.New("some error")
+		}
+	})
+	b.Run("xerrors", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			_ = xerrors.New("some error")
+		}
+	})
+}
+
 func TestNew(t *testing.T) {
 	disableTraceStack()
 	defer enableTraceStack()

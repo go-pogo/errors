@@ -15,7 +15,7 @@ func ExampleNew() {
 	}
 
 	err := doSomething()
-	fmt.Printf("%v\n", err)
+	fmt.Println(err)
 	// Output: something happened
 }
 
@@ -27,7 +27,7 @@ func ExampleMsg() {
 	}
 
 	err := doSomething()
-	fmt.Printf("%v\n", err)
+	fmt.Println(err)
 	// Output: something happened
 }
 
@@ -46,7 +46,7 @@ func ExampleWithKind() {
 	}
 
 	err := doSomething()
-	fmt.Printf("%v\n", err)
+	fmt.Println(err)
 	// Output: some action error: something went wrong
 }
 
@@ -59,12 +59,12 @@ func ExampleAppend() {
 		return dest, WithStack(err)
 	}
 
-	close := func() error {
+	closeSomething := func() error {
 		return errors.New("some error occurred while closing something")
 	}
 
 	doSomething := func() (err error) {
-		defer AppendFunc(&err, close)
+		defer AppendFunc(&err, closeSomething)
 
 		_, unmarshalErr := unmarshal()
 		if unmarshalErr != nil {
@@ -75,7 +75,7 @@ func ExampleAppend() {
 	}
 
 	err := doSomething()
-	fmt.Printf("%v\n", err)
+	fmt.Println(err)
 	// Output:
 	// multiple errors occurred:
 	// [1/2] invalid character 'i' looking for beginning of value;
@@ -95,7 +95,7 @@ func ExampleCatchPanic() {
 	}()
 
 	<-done
-	fmt.Printf("%v\n", err)
+	fmt.Println(err)
 	// Output:
 	// multiple errors occurred:
 	// [1/2] first error;
