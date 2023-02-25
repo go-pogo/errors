@@ -6,6 +6,7 @@ package errors
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 
 	"golang.org/x/xerrors"
@@ -56,16 +57,18 @@ func GetStackTrace(err error) *StackTrace {
 }
 
 type StackTrace struct {
-	frames []xerrors.Frame
+	frames []uintptr
 
 	// Skip n frames when formatting with Format, so overlapping frames from
 	// previous errors are not printed.
 	Skip uint
 }
 
+const framesCap = 16
+
 func newStackTrace(skipFrames uint) *StackTrace {
-	st := &StackTrace{frames: make([]xerrors.Frame, 0, 6)}
-	Callers(skipFrames+1, &st.frames)
+	st := &StackTrace{frames: make([]uintptr, 0, framesCap)}
+	callers(int(skipFrames)+1, &st.frames)
 	return st
 }
 
@@ -86,43 +89,41 @@ const panicCallersNilPtr = "errors.Callers: dest must be a pointer to a []xerror
 
 // Callers fills the stack *StackTrace with xerrors.Frame's from the point Callers
 // is called, skipping the first skipFrames frames.
-func Callers(skipFrames uint, dest *[]xerrors.Frame) int {
+func Callers(skipFrames uint, dest *[]uintptr) int {
 	if dest == nil {
 		panic(panicCallersNilPtr)
 	}
+	return callers(int(skipFrames)+1, dest)
+}
 
-	skip := int(skipFrames)
+func callers(skip int, dest *[]uintptr) int {
+	skip += 2
 
-	var n int
+	var count int
+	var pc [framesCap]uintptr
 	for {
-		skip += 1
-		f := xerrors.Caller(skip)
-		if !isValidFrame(f) {
+		n := runtime.Callers(skip+count, pc[:])
+		if n == 0 {
 			break
 		}
 
-		*dest = append(*dest, f)
-		n++
-	}
-	if n > 1 {
-		n--
-		*dest = (*dest)[:n]
+		*dest = append(*dest, pc[:n]...)
+		count += n
+		if n < framesCap {
+			break
+		}
 	}
 
-	return n
+	count -= 2
+	*dest = (*dest)[:count]
+	return count
 }
 
-const (
-	invalidFrameSuffix    = " 0]}"
-	invalidFrameSuffixLen = 4
-)
+func (st *StackTrace) Frames() []uintptr { return st.frames }
 
-func isValidFrame(f xerrors.Frame) bool {
-	s := fmt.Sprintf("%+v", f)
-	return s[len(s)-invalidFrameSuffixLen:] != invalidFrameSuffix
+func (st *StackTrace) CallersFrames() *runtime.Frames {
+	return runtime.CallersFrames(st.frames)
 }
-
-func (st *StackTrace) Frames() []xerrors.Frame { return st.frames }
 
 func (st *StackTrace) Len() uint {
 	if nil == st {
@@ -133,20 +134,42 @@ func (st *StackTrace) Len() uint {
 
 // Format formats the slice of xerrors.Frame using a xerrors.Printer.
 func (st *StackTrace) Format(printer xerrors.Printer) {
-	if !printer.Detail() {
-		return
-	}
-	for i := len(st.frames) - 1 - int(st.Skip); i >= 0; i-- {
-		st.frames[i].Format(printer)
+	if printer.Detail() {
+		st.printFrames(printer, st.Skip)
 	}
 }
 
 func (st *StackTrace) String() string {
 	var p framesPrinter
-	for i := len(st.frames) - 1; i >= 0; i-- {
-		st.frames[i].Format(&p)
-	}
+	st.printFrames(&p, 0)
 	return p.b.String()
+}
+
+func (st *StackTrace) printFrames(p Printer, skip uint) {
+	var callers []uintptr
+	if skip == 0 {
+		callers = st.frames
+	} else {
+		callers = st.frames[:len(st.frames)-int(skip)]
+	}
+
+	cf := runtime.CallersFrames(reverse(callers))
+	for {
+		fr, more := cf.Next()
+		p.Printf("%s\n    %s:%d\n", fr.Function, fr.File, fr.Line)
+		if !more {
+			break
+		}
+	}
+}
+
+func reverse(slice []uintptr) []uintptr {
+	n := len(slice)
+	for i := n/2 - 1; i >= 0; i-- {
+		opp := n - 1 - i
+		slice[i], slice[opp] = slice[opp], slice[i]
+	}
+	return slice
 }
 
 // framesPrinter is a xerrors.Printer that is used to print the string
