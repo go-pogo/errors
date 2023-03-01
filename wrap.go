@@ -54,10 +54,7 @@ func Wrap(cause error, msg interface{}) error {
 		panic(panicUseWithKindInstead)
 
 	default:
-		panic(UnsupportedTypeError{
-			Func: "errors.Wrap",
-			Type: reflect.TypeOf(v).String(),
-		})
+		panic(unsupportedType("errors.Wrap", reflect.TypeOf(v).String()))
 	}
 
 	return withCause(newCommonErr(parent, true), cause)

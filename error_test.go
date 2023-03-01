@@ -115,7 +115,7 @@ func TestNew(t *testing.T) {
 		for typ, input := range tests {
 			t.Run(typ, func(t *testing.T) {
 				assert.PanicsWithValue(t,
-					UnsupportedTypeError{Func: "errors.New", Type: typ},
+					unsupportedType("errors.New", typ),
 					func() { _ = New(input) },
 				)
 			})

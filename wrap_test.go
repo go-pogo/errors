@@ -87,7 +87,7 @@ func TestWrap(t *testing.T) {
 		for typ, input := range tests {
 			t.Run(typ, func(t *testing.T) {
 				assert.PanicsWithValue(t,
-					UnsupportedTypeError{Func: "errors.Wrap", Type: typ},
+					unsupportedType("errors.Wrap", typ),
 					func() { _ = Wrap(cause, input) },
 				)
 			})
