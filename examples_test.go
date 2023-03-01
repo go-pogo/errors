@@ -34,7 +34,7 @@ func ExampleMsg() {
 func ExampleWithKind() {
 	const (
 		ErrSomethingWentWrong Msg  = "something went wrong"
-		SomeKindOfError       Kind = "some action error"
+		SomeKindOfError       Kind = "some kind of error"
 	)
 
 	doSomethingElse := func() error {
@@ -47,7 +47,7 @@ func ExampleWithKind() {
 
 	err := doSomething()
 	fmt.Println(err)
-	// Output: some action error: something went wrong
+	// Output: some kind of error: something went wrong
 }
 
 func ExampleAppend() {

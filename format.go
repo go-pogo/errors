@@ -51,16 +51,16 @@ func FormatError(err error, state fmt.State, verb rune) {
 
 // PrintError prints the error err with the provided Printer and formats and
 // prints the error's stack frames.
-func PrintError(printer Printer, err error) {
+func PrintError(p Printer, err error) {
 	if err == nil {
 		return
 	}
 
-	printer.Print(err.Error())
-	if !printer.Detail() {
+	p.Print(err.Error())
+	if !p.Detail() {
 		return
 	}
 	if stack := GetStackTrace(err); stack != nil {
-		stack.Format(printer)
+		stack.Format(p)
 	}
 }
