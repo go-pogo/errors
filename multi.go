@@ -11,10 +11,18 @@ import (
 	"golang.org/x/xerrors"
 )
 
+// MultiError is an error which unwraps into multiple underlying errors.
 type MultiError interface {
 	error
 	Unwrap() []error
-	// Deprecated: Use Unwrap instead.
+}
+
+// DeprecatedMultiError is an error which unwraps into multiple underlying
+// errors using the deprecated Errors method.
+//
+// Deprecated: Use MultiError interface instead.
+type DeprecatedMultiError interface {
+	error
 	Errors() []error
 }
 
@@ -47,8 +55,8 @@ func Join(errs ...error) error {
 }
 
 // Combine returns a MultiError when more than one non-nil errors are provided.
-// // It returns a single error when only one error is passed, and nil if no
-// // non-nil errors are provided.
+// It returns a single error when only one error is passed, and nil if no
+// non-nil errors are provided.
 //
 // Deprecated: Use Join instead.
 func Combine(errs ...error) error { return Join(errs...) }
@@ -95,7 +103,7 @@ func Append(dest *error, errs ...error) {
 			if traceStack {
 				skipStackTrace(err, d.stack.Len())
 			}
-			d.errors = append(d.errors, err)
+			d.errs = append(d.errs, err)
 
 		default:
 			*dest = newMultiErr([]error{*dest, err}, 1)
@@ -115,33 +123,34 @@ func AppendFunc(dest *error, fn func() error) {
 }
 
 type multiErr struct {
-	stack  *StackTrace
-	errors []error
+	stack *StackTrace
+	msg   string
+	errs  []error
 }
 
-func newMultiErr(errors []error, skipFrames uint) *multiErr {
-	m := &multiErr{errors: errors}
+func newMultiErr(errs []error, skipFrames uint) *multiErr {
+	m := &multiErr{errs: errs}
 	if !traceStack {
 		return m
 	}
 
 	m.stack = newStackTrace(skipFrames + 1)
 	skip := m.stack.Len()
-	for _, err := range m.errors {
+	for _, err := range m.errs {
 		skipStackTrace(err, skip)
 	}
 	return m
 }
 
+func (m *multiErr) StackTrace() *StackTrace { return m.stack }
+
 // Unwrap returns the errors within the multi error.
-func (m *multiErr) Unwrap() []error { return m.errors }
+func (m *multiErr) Unwrap() []error { return m.errs }
 
 // Errors returns the errors within the multi error.
 //
 // Deprecated: Use Unwrap instead.
-func (m *multiErr) Errors() []error { return m.errors }
-
-func (m *multiErr) StackTrace() *StackTrace { return m.stack }
+func (m *multiErr) Errors() []error { return m.errs }
 
 // Format uses xerrors.FormatError to call the FormatError method of the error
 // with a Printer configured according to s and v, and writes the result to s.
@@ -150,24 +159,33 @@ func (m *multiErr) Format(s fmt.State, v rune) { xerrors.FormatError(m, s, v) }
 // FormatError prints a summary of the encountered errors to p.
 func (m *multiErr) FormatError(p Printer) error {
 	p.Print(m.Error())
-	if p.Detail() {
-		m.stack.Format(p)
-
-		l := len(m.errors)
-		for i, err := range m.errors {
-			p.Printf("\n[%d/%d] %+v\n", i+1, l, err)
-		}
+	if !p.Detail() {
+		return nil
 	}
 
+	m.stack.Format(p)
+	p.Print("\n")
+
+	l := len(m.errs)
+	for i, err := range m.errs {
+		p.Printf("[%d/%d] %+v\n", i+1, l, err)
+		if _, ok := err.(StackTracer); ok {
+			p.Print("\n")
+		}
+	}
 	return nil
 }
 
 func (m *multiErr) Error() string {
+	if m.msg != "" {
+		return m.msg
+	}
+
 	var buf strings.Builder
 	buf.WriteString("multiple errors occurred:")
 
-	l := len(m.errors)
-	for i, e := range m.errors {
+	l := len(m.errs)
+	for i, e := range m.errs {
 		_, _ = fmt.Fprintf(&buf, "\n[%d/%d] %s", i+1, l, e.Error())
 		if i < l-1 {
 			buf.WriteRune(';')

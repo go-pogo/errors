@@ -8,7 +8,7 @@
 package errors
 
 func (m *multiErr) Is(target error) bool {
-	for _, err := range m.errors {
+	for _, err := range m.errs {
 		if Is(err, target) {
 			return true
 		}
@@ -17,7 +17,7 @@ func (m *multiErr) Is(target error) bool {
 }
 
 func (m *multiErr) As(target interface{}) bool {
-	for _, err := range m.errors {
+	for _, err := range m.errs {
 		if As(err, target) {
 			return true
 		}
