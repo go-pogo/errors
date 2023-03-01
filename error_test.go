@@ -101,6 +101,11 @@ func TestNew(t *testing.T) {
 			_ = New(stderrors.New(str))
 		})
 	})
+	t.Run("with stack traced error", func(t *testing.T) {
+		want := WithStack(stderrors.New("some err")).(*embedError)
+		have := New(want)
+		assert.Same(t, want, have)
+	})
 	t.Run("with error", func(t *testing.T) {
 		err := New("some err")
 		assert.Same(t, err, New(err))
@@ -128,11 +133,11 @@ func TestNewf(t *testing.T) {
 	defer enableTraceStack()
 
 	t.Run("without args", func(t *testing.T) {
-		assert.Equal(t, New("some err"), Newf("some err"))
+		assert.Equal(t, New("some err"), Errorf("some err"))
 	})
 	t.Run("with cause", func(t *testing.T) {
 		cause := stderrors.New("some err")
-		have := Newf("whoops: %w", cause).(*commonError)
+		have := Errorf("whoops: %w", cause).(*commonError)
 		assert.ErrorIs(t, have, cause)
 		assert.Equal(t, cause, have.cause)
 		assert.Equal(t, cause, Unwrap(have))
@@ -197,11 +202,11 @@ func TestSameErrors(t *testing.T) {
 
 	cause := xerrors.New("cause of error")
 	tests := map[string]map[string][2]error{
-		"New&Newf": {
-			"empty": {New(""), Newf("")},
+		"New&Errorf": {
+			"empty": {New(""), Errorf("")},
 			"message only": {
 				New("some `foo` happened"),
-				Newf("some `%s` happened", "foo"),
+				Errorf("some `%s` happened", "foo"),
 			},
 		},
 		"Wrap&Wrapf": {

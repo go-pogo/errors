@@ -116,7 +116,7 @@ func TestJoin(t *testing.T) {
 	})
 	t.Run("with errors", func(t *testing.T) {
 		err1 := stderrors.New("first error")
-		err2 := Newf("err with trace")
+		err2 := Errorf("err with trace")
 		multi := Join(err1, err2).(*multiErr)
 
 		assert.Exactly(t, []error{err1, err2}, multi.Unwrap())

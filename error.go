@@ -6,7 +6,6 @@ package errors
 
 import (
 	"fmt"
-	"os"
 	"reflect"
 
 	"golang.org/x/xerrors"
@@ -16,14 +15,14 @@ import (
 // particularly useful for defining constants of known errors in your library
 // or application.
 //
-//    const ErrMyErrorMessage errors.Msg = "my error message"
-//    const ErrAnotherError   errors.Msg = "just another error"
+//	const ErrMyErrorMessage errors.Msg = "my error message"
+//	const ErrAnotherError   errors.Msg = "just another error"
 //
 // A new error can be constructed from any Msg with New and is considered to be
 // equal when comparing with Is.
 //
-//    err := errors.New(ErrMyErrorMessage)
-//    errors.Is(err, ErrMyErrorMessage) // true
+//	err := errors.New(ErrMyErrorMessage)
+//	errors.Is(err, ErrMyErrorMessage) // true
 type Msg string
 
 const panicUseWithStackInstead = "errors.New: use errors.WithStack instead to wrap an error with an errors.StackTracer and xerrors.Formatter"
@@ -31,8 +30,8 @@ const panicUseWithStackInstead = "errors.New: use errors.WithStack instead to wr
 // New creates a new error which implements the StackTracer, Wrapper and
 // Formatter interfaces. Argument msg can be either a string or Msg.
 //
-//    err := errors.New("my error message")
-//    err := errors.New(errors.Msg("my error message"))
+//	err := errors.New("my error message")
+//	err := errors.New(errors.Msg("my error message"))
 //
 // New records a stack trace at the point it was called. Each call returns a
 // distinct error value even if msg is identical. It will return nil if msg is
@@ -50,14 +49,14 @@ func New(msg interface{}) error {
 		return v
 
 	case string:
-		return newCommonErr(Msg(v), true)
+		return newCommonErr(Msg(v), true, 1)
 	case *string:
-		return newCommonErr(Msg(*v), true)
+		return newCommonErr(Msg(*v), true, 1)
 
 	case Msg:
-		return newCommonErr(v, true)
+		return newCommonErr(v, true, 1)
 	case *Msg:
-		return newCommonErr(*v, true)
+		return newCommonErr(*v, true, 1)
 
 	case error:
 		panic(panicUseWithStackInstead)
@@ -68,15 +67,37 @@ func New(msg interface{}) error {
 }
 
 // Newf formats an error message according to a format specifier and provided
+// arguments.
+//
+// Deprecated: Use Errorf instead.
+func Newf(format string, args ...interface{}) error { return errorf(format, args) }
+
+// Errorf formats an error message according to a format specifier and provided
 // arguments with fmt.Errorf, and creates a new error similar to New.
 //
-//    err := errors.Newf("my error %s", "message")
-//    err := errors.Newf("my error: %w", cause)
-func Newf(format string, args ...interface{}) error {
+//	err := errors.Errorf("my error %s", "message")
+//	err := errors.Errorf("my error: %w", cause)
+func Errorf(format string, args ...interface{}) error { return errorf(format, args) }
+
+func errorf(format string, args []interface{}) error {
 	if len(args) == 0 {
-		return newCommonErr(Msg(format), true)
+		return newCommonErr(Msg(format), true, 2)
 	}
-	return withPossibleCause(newCommonErr(fmt.Errorf(format, args...), true))
+
+	err := fmt.Errorf(format, args...)
+	if w, ok := err.(interface{ Unwrap() []error }); ok {
+		me := newMultiErr(w.Unwrap(), 2)
+		me.msg = err.Error()
+		return me
+	}
+
+	ce := newCommonErr(err, true, 2)
+	if w, ok := err.(xerrors.Wrapper); ok {
+		if cause := w.Unwrap(); cause != nil {
+			_ = withCause(ce, cause)
+		}
+	}
+	return ce
 }
 
 func (m Msg) Is(target error) bool {
@@ -110,10 +131,10 @@ type commonError struct {
 	stack *StackTrace
 }
 
-func newCommonErr(parent error, trace bool) *commonError {
+func newCommonErr(parent error, trace bool, skipFrames uint) *commonError {
 	ce := &commonError{error: parent}
 	if traceStack && trace {
-		ce.stack = newStackTrace(2)
+		ce.stack = newStackTrace(skipFrames + 1)
 	}
 	return ce
 }
@@ -122,15 +143,6 @@ func withCause(ce *commonError, cause error) *commonError {
 	ce.cause = cause
 	if traceStack && ce.stack != nil {
 		skipStackTrace(cause, ce.stack.Len())
-	}
-	return ce
-}
-
-func withPossibleCause(ce *commonError) *commonError {
-	if w, ok := ce.error.(xerrors.Wrapper); ok {
-		if cause := w.Unwrap(); cause != nil {
-			return withCause(ce, cause)
-		}
 	}
 	return ce
 }

@@ -57,7 +57,7 @@ func Wrap(cause error, msg interface{}) error {
 		panic(unsupportedType("errors.Wrap", reflect.TypeOf(v).String()))
 	}
 
-	return withCause(newCommonErr(parent, true), cause)
+	return withCause(newCommonErr(parent, true, 1), cause)
 }
 
 // Wrapf formats an error message according to a format specifier and provided
@@ -68,7 +68,7 @@ func Wrapf(cause error, format string, args ...interface{}) error {
 	if cause == nil {
 		return nil
 	}
-	return withCause(newCommonErr(fmt.Errorf(format, args...), true), cause)
+	return withCause(newCommonErr(fmt.Errorf(format, args...), true, 1), cause)
 }
 
 // Opaque is an alias of xerrors.Opaque. It returns an error with the same error
