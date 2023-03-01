@@ -6,6 +6,7 @@ package errors
 
 import (
 	"fmt"
+	"io"
 	"runtime"
 	"strings"
 
@@ -57,18 +58,36 @@ func GetStackTrace(err error) *StackTrace {
 }
 
 type StackTrace struct {
-	frames []uintptr
+	frames   []uintptr
+	reversed bool
 
 	// Skip n frames when formatting with Format, so overlapping frames from
 	// previous errors are not printed.
 	Skip uint
 }
 
-const framesCap = 16
+const framesDepth = 16
 
 func newStackTrace(skipFrames uint) *StackTrace {
-	st := &StackTrace{frames: make([]uintptr, 0, framesCap)}
-	callers(int(skipFrames)+1, &st.frames)
+	st := &StackTrace{frames: make([]uintptr, 0, framesDepth)}
+
+	skip := int(skipFrames) + 2
+	var pc [framesDepth]uintptr
+	for {
+		n := runtime.Callers(skip, pc[:])
+		if n == 0 {
+			break
+		}
+
+		st.frames = append(st.frames, pc[:n]...)
+		skip += n
+
+		if n < framesDepth {
+			break
+		}
+	}
+
+	st.frames = st.frames[:len(st.frames)-2]
 	return st
 }
 
@@ -85,46 +104,56 @@ func skipStackTrace(err error, skip uint) {
 	st.Skip = skip - 1
 }
 
-const panicCallersNilPtr = "errors.Callers: dest must be a pointer to a []xerrors.Frame"
-
-// Callers fills the stack *StackTrace with xerrors.Frame's from the point Callers
-// is called, skipping the first skipFrames frames.
-func Callers(skipFrames uint, dest *[]uintptr) int {
-	if dest == nil {
-		panic(panicCallersNilPtr)
-	}
-	return callers(int(skipFrames)+1, dest)
-}
-
-func callers(skip int, dest *[]uintptr) int {
-	skip += 2
-
-	var count int
-	var pc [framesCap]uintptr
-	for {
-		n := runtime.Callers(skip+count, pc[:])
-		if n == 0 {
-			break
-		}
-
-		*dest = append(*dest, pc[:n]...)
-		count += n
-		if n < framesCap {
-			break
-		}
+func (st *StackTrace) reverseFrames() {
+	if st.reversed {
+		return
 	}
 
-	count -= 2
-	*dest = (*dest)[:count]
-	return count
+	n := len(st.frames)
+	for i := n/2 - 1; i >= 0; i-- {
+		opp := n - 1 - i
+		st.frames[i], st.frames[opp] = st.frames[opp], st.frames[i]
+	}
 }
 
-func (st *StackTrace) Frames() []uintptr { return st.frames }
+type Frame uintptr
 
+// PC is the program counter for the location in this frame.
+func (fr Frame) PC() uintptr { return uintptr(fr) }
+
+// Func returns a *runtime.Func describing the function that contains the
+// given program counter address, or else nil.
+func (fr Frame) Func() *runtime.Func { return runtime.FuncForPC(fr.PC()) }
+
+// FileLine returns the file name and line number of the source code
+// corresponding to the program counter PC.
+func (fr Frame) FileLine() (file string, line int) {
+	if f := fr.Func(); f == nil {
+		return "", 0
+	} else {
+		return f.FileLine(fr.PC())
+	}
+}
+
+// Frames returns a []Frame. Use CallersFrames instead if you want to access the
+// whole stack trace of frames.
+func (st *StackTrace) Frames() []Frame {
+	st.reverseFrames()
+	frames := make([]Frame, len(st.frames))
+	for i, pc := range st.frames {
+		frames[i] = Frame(pc)
+	}
+	return frames
+}
+
+// CallersFrames returns a *runtime.Frames by calling runtime.CallersFrame with
+// the captured stack trace frames as callers argument.
 func (st *StackTrace) CallersFrames() *runtime.Frames {
+	st.reverseFrames()
 	return runtime.CallersFrames(st.frames)
 }
 
+// Len returns the amount of captures frames.
 func (st *StackTrace) Len() uint {
 	if nil == st {
 		return 0
@@ -132,56 +161,48 @@ func (st *StackTrace) Len() uint {
 	return uint(len(st.frames))
 }
 
-// Format formats the slice of xerrors.Frame using a xerrors.Printer.
+// Format formats the slice of xerrors.Frame using a xerrors.Printer. It will
+// Skip n frames when printing so no overlapping frames with underlying errors
+// are displayed.
 func (st *StackTrace) Format(printer xerrors.Printer) {
 	if printer.Detail() {
 		st.printFrames(printer, st.Skip)
 	}
 }
 
+// String returns a formatted string of the complete stack trace.
 func (st *StackTrace) String() string {
-	var p framesPrinter
-	st.printFrames(&p, 0)
-	return p.b.String()
+	var b strings.Builder
+	st.printFrames(&framesPrinter{&b}, 0)
+	return b.String()
 }
 
 func (st *StackTrace) printFrames(p Printer, skip uint) {
-	var callers []uintptr
-	if skip == 0 {
-		callers = st.frames
-	} else {
-		callers = st.frames[:len(st.frames)-int(skip)]
-	}
+	st.reverseFrames()
+	PrintFrames(p, runtime.CallersFrames(st.frames[skip:]))
+}
 
-	cf := runtime.CallersFrames(reverse(callers))
+// PrintFrames prints a complete stack of *runtime.Frames using Printer p.
+func PrintFrames(p Printer, cf *runtime.Frames) {
 	for {
-		fr, more := cf.Next()
-		p.Printf("%s\n    %s:%d\n", fr.Function, fr.File, fr.Line)
+		f, more := cf.Next()
+		p.Printf("%s\n    %s:%d\n", f.Function, f.File, f.Line)
 		if !more {
 			break
 		}
 	}
 }
 
-func reverse(slice []uintptr) []uintptr {
-	n := len(slice)
-	for i := n/2 - 1; i >= 0; i-- {
-		opp := n - 1 - i
-		slice[i], slice[opp] = slice[opp], slice[i]
-	}
-	return slice
-}
-
 // framesPrinter is a xerrors.Printer that is used to print the string
 // representation of StackTrace.
-type framesPrinter struct{ b strings.Builder }
+type framesPrinter struct{ b io.Writer }
 
 func (p *framesPrinter) Print(args ...interface{}) {
-	_, _ = fmt.Fprint(&p.b, args...)
+	_, _ = fmt.Fprint(p.b, args...)
 }
 
 func (p *framesPrinter) Printf(format string, args ...interface{}) {
-	_, _ = fmt.Fprintf(&p.b, format, args...)
+	_, _ = fmt.Fprintf(p.b, format, args...)
 }
 
-func (p *framesPrinter) Detail() bool { return true }
+func (*framesPrinter) Detail() bool { return true }

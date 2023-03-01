@@ -30,7 +30,7 @@ func TestGetStackTrace(t *testing.T) {
 	for name, err := range tests {
 		t.Run(name, func(t *testing.T) {
 			f := GetStackTrace(err)
-			assert.Len(t, f.Frames(), 1)
+			assert.Equal(t, f.Len(), uint(1), f.String())
 			assert.Contains(t, f.String(), "trace_test.go:")
 		})
 	}

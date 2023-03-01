@@ -39,11 +39,3 @@ func TestWithStack(t *testing.T) {
 		assert.Same(t, err, have)
 	})
 }
-
-func TestCallers(t *testing.T) {
-	t.Run("nil", func(t *testing.T) {
-		assert.PanicsWithValue(t, panicCallersNilPtr, func() {
-			Callers(0, nil)
-		})
-	})
-}
