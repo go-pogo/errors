@@ -46,14 +46,18 @@ import "github.com/go-pogo/errors"
 Instead of defining error messages as global variables, it is possible to define
 them as constants using `errors.Msg`.
 
-	const ErrSomethingWentWrong errors.Msg = "something went wrong"
+```go
+const ErrSomethingWentWrong errors.Msg = "something went wrong"
+```
 
 This same can be done with `errors.Kind`:
 
-	const InvalidOpError errors.Kind = "invalid operation error"
-	err = errors.WithKind(err, InvalidOpError)
+```go
+const InvalidOpError errors.Kind = "invalid operation error"
+err = errors.WithKind(err, InvalidOpError)
 
-	errors.Is(err, InvalidOpError) // true
+errors.Is(err, InvalidOpError) // true
+```
 
 ## Formatting
 Wrap an existing error with `errors.WithFormatter` to upgrade the error to
@@ -62,13 +66,17 @@ Formatting is done using `xerrors.FormatError` and thus the same verbs are
 supported. Any error created with this package implements the `fmt.Formatter`
 and `xerrors.Formatter` interfaces.
 
-	fmt.Printf("%+v", errors.WithFormatter(err))
+```go
+fmt.Printf("%+v", errors.WithFormatter(err))
+```
 
 ## Stack tracing
 Every error can track stack trace information. Just wrap it with
 `errors.WithStack` and a complete stack trace is captured.
 
-	err = errors.WithStack(err)
+```go
+err = errors.WithStack(err)
+```
 
 An `errors.StackTrace` can be retrieved using `errors.GetStackTrace`.
 Printing the error results in a trace similar to:
@@ -91,8 +99,10 @@ go build -tags=notrace
 ## Catching panics
 A convenient function is available to catch panics and store them as an error.
 
-	var err error
-	defer errors.CatchPanic(&err)
+```go
+var err error
+defer errors.CatchPanic(&err)
+```
 
 ## Backwards compatibility
 Unwrap, Is, As are backwards compatible with the standard library's `errors`
