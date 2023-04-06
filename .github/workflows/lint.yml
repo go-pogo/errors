@@ -12,4 +12,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
-      - uses: golangci/golangci-lint-action@v3
+
+      - name: Verify formatting
+        run: gofmt -s -w . && git diff --exit-code
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Verify tidy modules
+        run: go mod tidy && git diff --exit-code
+
+      - name: Verify dependencies
+        run: go mod download && go mod verify
+
+      - name: Run linter
+        uses: golangci/golangci-lint-action@v3

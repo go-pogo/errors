@@ -9,7 +9,7 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [1.20.x, 1.19.x, 1.18.x, 1.17.x, 1.16.x, 1.15.x, 1.14.x, 1.13.x]
+        go-version: ['stable', 'oldstable', 1.18.x, 1.17.x, 1.16.x, 1.15.x, 1.14.x, 1.13.x]
         platform: [ubuntu-latest, macos-latest, windows-latest]
 
     runs-on: ${{ matrix.platform }}
@@ -21,10 +21,10 @@ jobs:
           go-version: ${{ matrix.go-version }}
 
       - name: Get dependencies
-        run: go get -v -t -d ./...
+        run: go mod download
 
       - name: Run tests
-        run: go test -race -v ./...
+        run: go test -race -v -count=1 -shuffle=on ./...
 
       - name: Run tests with notrace
-        run: go test -tags notrace -race -v ./...
+        run: go test -race -v -count=1 -shuffle=on -tags=notrace ./...
