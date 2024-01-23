@@ -15,6 +15,8 @@ type ExitCoder interface {
 	ExitCode() int
 }
 
+// ExitCoderSetter interfaces provide access to an exit code which can be
+// changed.
 type ExitCoderSetter interface {
 	ExitCoder
 	SetExitCode(int)
@@ -28,6 +30,7 @@ func WithExitCode(err error, exitCode int) ExitCoder {
 		return nil
 	}
 
+	//goland:noinspection GoTypeAssertionOnErrors
 	if e, ok := err.(ExitCoderSetter); ok {
 		e.SetExitCode(exitCode)
 		return e
