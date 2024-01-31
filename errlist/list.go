@@ -23,13 +23,8 @@ type List struct {
 	list []error
 }
 
-const (
-	panicNewListCap  = "errors.New: cap cannot be below 0"
-	panicNewListArgs = "errors.New: only one argument is allowed"
-)
-
 // New creates a new List with a pre-allocated capacity of cap.
-func New(cap int) *List {
+func New(cap uint) *List {
 	return &List{
 		list: make([]error, 0, cap),
 	}

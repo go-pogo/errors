@@ -21,8 +21,8 @@ func assertEmptyList(t *testing.T, list *List) {
 
 func TestNewList(t *testing.T) {
 	t.Run("default capacity", func(t *testing.T) {
-		list := New()
-		assert.Exactly(t, int(DefaultCapacity), cap(list.list))
+		list := New(DefaultCapacity)
+		assert.Exactly(t, DefaultCapacity, cap(list.list))
 		assertEmptyList(t, list)
 	})
 	t.Run("set capacity", func(t *testing.T) {
@@ -30,26 +30,16 @@ func TestNewList(t *testing.T) {
 		assert.Equal(t, 22, cap(list.list))
 		assertEmptyList(t, list)
 	})
-	t.Run("negative capacity", func(t *testing.T) {
-		assert.PanicsWithValue(t, panicNewListCap, func() {
-			_ = New(-1)
-		})
-	})
-	t.Run("too much arguments", func(t *testing.T) {
-		assert.PanicsWithValue(t, panicNewListArgs, func() {
-			_ = New(1, 2)
-		})
-	})
 }
 
 func TestList_Append(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
-		list := New()
+		var list List
 		assert.False(t, list.Append(nil))
-		assertEmptyList(t, list)
+		assertEmptyList(t, &list)
 	})
 	t.Run("error", func(t *testing.T) {
-		list := New()
+		var list List
 		assert.True(t, list.Append(errors.New("some err")))
 		assert.Equal(t, 1, list.Len())
 	})
@@ -57,10 +47,10 @@ func TestList_Append(t *testing.T) {
 
 func TestList_Prepend(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
-		assert.False(t, New().Prepend(nil))
+		assert.False(t, new(List).Prepend(nil))
 	})
 	t.Run("error", func(t *testing.T) {
-		assert.True(t, New().Prepend(errors.New("some err")))
+		assert.True(t, New(2).Prepend(errors.New("some err")))
 	})
 }
 
@@ -105,11 +95,12 @@ func TestList_Join(t *testing.T) {
 		stderrors.New("foobar"),
 	}
 
-	list := New(3)
+	var list List
 	for _, e := range errs {
 		list.Append(e)
 	}
 
+	//goland:noinspection GoTypeAssertionOnErrors
 	multi := list.Join().(errors.MultiError)
 	assert.Exactly(t, []error{errs[0], errs[2]}, multi.Unwrap())
 	assert.Equal(t, errors.Join(errs...), multi)
