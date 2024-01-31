@@ -17,6 +17,7 @@ type ErrorLister interface {
 	ErrorList() *List
 }
 
+// List is a thread-safe error list. Its zero value is ready to use.
 type List struct {
 	sync.RWMutex
 	list []error
@@ -28,31 +29,23 @@ const (
 )
 
 // New creates a new List with a pre-allocated capacity of cap.
-func New(cap ...int) *List {
-	var c int
-	switch len(cap) {
-	case 0:
-		c = int(DefaultCapacity)
-	case 1:
-		c = cap[0]
-		if c < 0 {
-			panic(panicNewListCap)
-		}
-	default:
-		panic(panicNewListArgs)
-	}
-
+func New(cap int) *List {
 	return &List{
-		list: make([]error, 0, c),
+		list: make([]error, 0, cap),
 	}
 }
 
 // All returns the error slice within the list.
 func (l *List) All() []error {
+	l.RLock()
+	defer l.RUnlock()
 	if l.list == nil {
-		l.list = make([]error, 0)
+		return nil
 	}
-	return l.list
+
+	var res = make([]error, 0, len(l.list))
+	copy(res, l.list)
+	return res
 }
 
 // Len returns the number of errors within the List.
@@ -70,6 +63,9 @@ func (l *List) Append(err error) bool {
 	}
 
 	l.Lock()
+	if l.list == nil {
+		l.list = make([]error, 0, DefaultCapacity)
+	}
 	l.list = append(l.list, err)
 	l.Unlock()
 	return true
@@ -84,7 +80,12 @@ func (l *List) Prepend(err error) bool {
 	}
 
 	l.Lock()
-	l.list = prepend(l.list, err)
+	if l.list == nil {
+		l.list = make([]error, 0, DefaultCapacity)
+		l.list = append(l.list, err)
+	} else {
+		l.list = prepend(l.list, err)
+	}
 	l.Unlock()
 	return true
 }
@@ -104,6 +105,5 @@ func (l *List) Join() error {
 	l.RLock()
 	err := errors.Join(l.list...)
 	l.RUnlock()
-
 	return err
 }
