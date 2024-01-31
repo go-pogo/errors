@@ -38,8 +38,8 @@ func (l *List) All() []error {
 		return nil
 	}
 
-	var res = make([]error, 0, len(l.list))
-	copy(res, l.list)
+	res := make([]error, 0, len(l.list))
+	res = append(res, l.list...)
 	return res
 }
 
