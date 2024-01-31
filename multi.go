@@ -18,15 +18,6 @@ type MultiError interface {
 	Unwrap() []error
 }
 
-// DeprecatedMultiError is an error which unwraps into multiple underlying
-// errors using the deprecated Errors method.
-//
-// Deprecated: Use MultiError interface instead.
-type DeprecatedMultiError interface {
-	error
-	Errors() []error
-}
-
 // Filter returns a slice of errors without nil values in between them. It
 // returns the slice with the length of the amount of non-nil errors but keeps
 // its original capacity.
@@ -52,17 +43,8 @@ func Join(errs ...error) error {
 	if len(errs) == 0 {
 		return nil
 	}
-	return combine(Filter(errs))
-}
 
-// Combine returns a MultiError when more than one non-nil errors are provided.
-// It returns a single error when only one error is passed, and nil if no
-// non-nil errors are provided.
-//
-// Deprecated: Use Join instead.
-func Combine(errs ...error) error { return Join(errs...) }
-
-func combine(errs []error) error {
+	errs = Filter(errs)
 	switch len(errs) {
 	case 0:
 		return nil
