@@ -9,12 +9,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/go-pogo/errors/internal"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestWrapWrapf(t *testing.T) {
-	disableTraceStack()
-	defer enableTraceStack()
+	internal.DisableTraceStack()
+	defer internal.EnableTraceStack()
 
 	tests := map[string]struct {
 		cause           error
@@ -45,8 +46,8 @@ func TestWrapWrapf(t *testing.T) {
 }
 
 func TestWrap(t *testing.T) {
-	disableTraceStack()
-	defer enableTraceStack()
+	internal.DisableTraceStack()
+	defer internal.EnableTraceStack()
 
 	t.Run("with nil cause", func(t *testing.T) {
 		assert.Nil(t, Wrap(nil, "foobar"))

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/go-pogo/errors/internal"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -56,8 +57,8 @@ func TestMust(t *testing.T) {
 }
 
 func TestCatchPanic(t *testing.T) {
-	disableTraceStack()
-	defer enableTraceStack()
+	internal.DisableTraceStack()
+	defer internal.EnableTraceStack()
 
 	val := struct{ val string }{val: "some value"}
 

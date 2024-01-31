@@ -11,21 +11,25 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/go-pogo/errors/internal"
 	"github.com/stretchr/testify/assert"
 )
 
 type errChainHelper []error
 
+//goland:noinspection GoMixedReceiverTypes
 func (h *errChainHelper) append(err error) error {
 	*h = append(*h, err)
 	return err
 }
 
+//goland:noinspection GoMixedReceiverTypes
 func (h *errChainHelper) prepend(err error) error {
-	*h = prepend(*h, err)
+	*h = append([]error{err}, *h...)
 	return err
 }
 
+//goland:noinspection GoMixedReceiverTypes
 func (h errChainHelper) last() error { return h[len(h)-1] }
 
 func wrappers() map[string]func(parent error) error {
@@ -89,8 +93,8 @@ func TestIs(t *testing.T) {
 	})
 
 	t.Run("multi", func(t *testing.T) {
-		disableTraceStack()
-		defer enableTraceStack()
+		internal.DisableTraceStack()
+		defer internal.EnableTraceStack()
 
 		err1 := stderrors.New("some err")
 		err2 := New("whoops")
@@ -106,8 +110,8 @@ type customError struct{}
 func (ce *customError) Error() string { return "this is a custom error" }
 
 func TestAs(t *testing.T) {
-	disableTraceStack()
-	defer enableTraceStack()
+	internal.DisableTraceStack()
+	defer internal.EnableTraceStack()
 
 	var customErr *customError
 	var pathErrPtr *os.PathError
@@ -149,8 +153,8 @@ func TestAs(t *testing.T) {
 	}
 
 	t.Run("multi", func(t *testing.T) {
-		disableTraceStack()
-		defer enableTraceStack()
+		internal.DisableTraceStack()
+		defer internal.EnableTraceStack()
 
 		err1 := stderrors.New("some err")
 		err2 := New("whoops")

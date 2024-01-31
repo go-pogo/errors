@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-pogo/errors/internal"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/xerrors"
 )
@@ -46,8 +47,8 @@ func TestWithFormatter(t *testing.T) {
 }
 
 func TestFormatError(t *testing.T) {
-	disableTraceStack()
-	defer enableTraceStack()
+	internal.DisableTraceStack()
+	defer internal.EnableTraceStack()
 
 	tests := map[string]struct {
 		err          error

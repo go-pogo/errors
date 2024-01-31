@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/go-pogo/errors/internal"
 	"golang.org/x/xerrors"
 )
 
@@ -30,6 +31,7 @@ func WithStack(err error) StackTracer {
 		return nil
 	}
 
+	//goland:noinspection GoTypeAssertionOnErrors
 	switch v := err.(type) {
 	case StackTracer:
 		return v
@@ -39,7 +41,7 @@ func WithStack(err error) StackTracer {
 
 	default:
 		ee := &embedError{error: v}
-		if traceStack {
+		if internal.TraceStack {
 			ee.stack = newStackTrace(1)
 			if u := Unwrap(v); u != nil {
 				skipStackTrace(u, ee.stack.Len())
@@ -51,6 +53,7 @@ func WithStack(err error) StackTracer {
 
 // GetStackTrace returns a *StackTrace if err is a StackTracer or nil otherwise.
 func GetStackTrace(err error) *StackTrace {
+	//goland:noinspection GoTypeAssertionOnErrors
 	if e, ok := err.(StackTracer); ok {
 		return e.StackTrace()
 	}

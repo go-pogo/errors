@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/go-pogo/errors/internal"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -117,6 +118,7 @@ func TestJoin(t *testing.T) {
 	t.Run("with errors", func(t *testing.T) {
 		err1 := stderrors.New("first error")
 		err2 := Errorf("err with trace")
+		//goland:noinspection GoTypeAssertionOnErrors
 		multi := Join(err1, err2).(*multiErr)
 
 		assert.Exactly(t, []error{err1, err2}, multi.Unwrap())
@@ -156,15 +158,16 @@ func TestAppend(t *testing.T) {
 
 		assert.IsType(t, new(multiErr), have)
 
+		//goland:noinspection GoTypeAssertionOnErrors
 		multi := have.(*multiErr)
 		assert.Exactly(t, errs, multi.Unwrap())
 
-		if traceStack {
+		if internal.TraceStack {
 			assert.Equal(t, len(multi.stack.frames), 1)
 
 			_, file, line, _ := runtime.Caller(0)
 			// line must point to the last Append call a couple of lines above
-			assert.Contains(t, multi.StackTrace().String(), fmt.Sprintf("%s:%d", file, line-11))
+			assert.Contains(t, multi.StackTrace().String(), fmt.Sprintf("%s:%d", file, line-12))
 		}
 	})
 }

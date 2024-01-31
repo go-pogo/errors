@@ -8,13 +8,14 @@ import (
 	stderrors "errors"
 	"testing"
 
+	"github.com/go-pogo/errors/internal"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/xerrors"
 )
 
 func BenchmarkNew(b *testing.B) {
-	disableTraceStack()
-	defer enableTraceStack()
+	internal.DisableTraceStack()
+	defer internal.EnableTraceStack()
 
 	str := "some err"
 	msg := Msg("some err")
@@ -70,8 +71,8 @@ func BenchmarkMultiErr_Error(b *testing.B) {
 }
 
 func TestNew(t *testing.T) {
-	disableTraceStack()
-	defer enableTraceStack()
+	internal.DisableTraceStack()
+	defer internal.EnableTraceStack()
 
 	t.Run("with nil", func(t *testing.T) {
 		assert.Nil(t, New(nil))
@@ -88,6 +89,7 @@ func TestNew(t *testing.T) {
 	}
 	for name, input := range tests {
 		t.Run(name, func(t *testing.T) {
+			//goland:noinspection GoTypeAssertionOnErrors
 			have := New(input).(*commonError)
 			assert.Equal(t, msg, have.error)
 			assert.Nil(t, have.cause)
@@ -102,6 +104,7 @@ func TestNew(t *testing.T) {
 		})
 	})
 	t.Run("with stack traced error", func(t *testing.T) {
+		//goland:noinspection GoTypeAssertionOnErrors
 		want := WithStack(stderrors.New("some err")).(*embedError)
 		have := New(want)
 		assert.Same(t, want, have)
@@ -129,14 +132,15 @@ func TestNew(t *testing.T) {
 }
 
 func TestNewf(t *testing.T) {
-	disableTraceStack()
-	defer enableTraceStack()
+	internal.DisableTraceStack()
+	defer internal.EnableTraceStack()
 
 	t.Run("without args", func(t *testing.T) {
 		assert.Equal(t, New("some err"), Errorf("some err"))
 	})
 	t.Run("with cause", func(t *testing.T) {
 		cause := stderrors.New("some err")
+		//goland:noinspection GoTypeAssertionOnErrors,GoPrintFunctions
 		have := Errorf("whoops: %w", cause).(*commonError)
 		assert.ErrorIs(t, have, cause)
 		assert.Equal(t, cause, have.cause)
@@ -197,8 +201,8 @@ func TestMsg_As(t *testing.T) {
 }
 
 func TestSameErrors(t *testing.T) {
-	disableTraceStack()
-	defer enableTraceStack()
+	internal.DisableTraceStack()
+	defer internal.EnableTraceStack()
 
 	cause := xerrors.New("cause of error")
 	tests := map[string]map[string][2]error{

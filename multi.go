@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/go-pogo/errors/internal"
 	"golang.org/x/xerrors"
 )
 
@@ -100,7 +101,7 @@ func Append(dest *error, errs ...error) {
 			*dest = err
 
 		case *multiErr:
-			if traceStack {
+			if internal.TraceStack {
 				skipStackTrace(err, d.stack.Len())
 			}
 			d.errs = append(d.errs, err)
@@ -130,7 +131,7 @@ type multiErr struct {
 
 func newMultiErr(errs []error, skipFrames uint) *multiErr {
 	m := &multiErr{errs: errs}
-	if !traceStack {
+	if !internal.TraceStack {
 		return m
 	}
 
@@ -169,6 +170,7 @@ func (m *multiErr) FormatError(p Printer) error {
 	l := len(m.errs)
 	for i, err := range m.errs {
 		p.Printf("[%d/%d] %+v\n", i+1, l, err)
+		//goland:noinspection GoTypeAssertionOnErrors
 		if _, ok := err.(StackTracer); ok {
 			p.Print("\n")
 		}

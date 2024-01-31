@@ -7,6 +7,7 @@ package errors
 import (
 	"fmt"
 
+	"github.com/go-pogo/errors/internal"
 	"golang.org/x/xerrors"
 )
 
@@ -55,7 +56,7 @@ func WithKind(err error, kind Kind) error {
 		kind:  kind,
 		cause: err,
 	}
-	if traceStack {
+	if internal.TraceStack {
 		e.stack = newStackTrace(1)
 		skipStackTrace(err, e.stack.Len())
 	}

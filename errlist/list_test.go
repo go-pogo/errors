@@ -2,12 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package errors
+package errlist
 
 import (
 	stderrors "errors"
 	"testing"
 
+	"github.com/go-pogo/errors"
+	"github.com/go-pogo/errors/internal"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,46 +21,46 @@ func assertEmptyList(t *testing.T, list *List) {
 
 func TestNewList(t *testing.T) {
 	t.Run("default capacity", func(t *testing.T) {
-		list := NewList()
-		assert.Exactly(t, int(DefaultListCapacity), cap(list.list))
+		list := New()
+		assert.Exactly(t, int(DefaultCapacity), cap(list.list))
 		assertEmptyList(t, list)
 	})
 	t.Run("set capacity", func(t *testing.T) {
-		list := NewList(22)
+		list := New(22)
 		assert.Equal(t, 22, cap(list.list))
 		assertEmptyList(t, list)
 	})
 	t.Run("negative capacity", func(t *testing.T) {
 		assert.PanicsWithValue(t, panicNewListCap, func() {
-			_ = NewList(-1)
+			_ = New(-1)
 		})
 	})
 	t.Run("too much arguments", func(t *testing.T) {
 		assert.PanicsWithValue(t, panicNewListArgs, func() {
-			_ = NewList(1, 2)
+			_ = New(1, 2)
 		})
 	})
 }
 
 func TestList_Append(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
-		list := NewList()
+		list := New()
 		assert.False(t, list.Append(nil))
 		assertEmptyList(t, list)
 	})
 	t.Run("error", func(t *testing.T) {
-		list := NewList()
-		assert.True(t, list.Append(New("some err")))
+		list := New()
+		assert.True(t, list.Append(errors.New("some err")))
 		assert.Equal(t, 1, list.Len())
 	})
 }
 
 func TestList_Prepend(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
-		assert.False(t, NewList().Prepend(nil))
+		assert.False(t, New().Prepend(nil))
 	})
 	t.Run("error", func(t *testing.T) {
-		assert.True(t, NewList().Prepend(New("some err")))
+		assert.True(t, New().Prepend(errors.New("some err")))
 	})
 }
 
@@ -74,7 +76,7 @@ func TestList_All(t *testing.T) {
 		var list List
 		assertEmptyList(t, &list)
 
-		err := New("some err")
+		err := errors.New("some err")
 		list.Append(err)
 		assert.Exactly(t, []error{err}, list.All())
 	})
@@ -82,7 +84,7 @@ func TestList_All(t *testing.T) {
 		var list List
 		assertEmptyList(t, &list)
 
-		err1 := New("some err")
+		err1 := errors.New("some err")
 		err2 := stderrors.New("prepend me")
 
 		list.Append(err1)
@@ -94,21 +96,21 @@ func TestList_All(t *testing.T) {
 }
 
 func TestList_Join(t *testing.T) {
-	disableTraceStack()
-	defer enableTraceStack()
+	internal.DisableTraceStack()
+	defer internal.EnableTraceStack()
 
 	errs := []error{
-		New("some err"),
+		errors.New("some err"),
 		nil,
 		stderrors.New("foobar"),
 	}
 
-	list := NewList(3)
+	list := New(3)
 	for _, e := range errs {
 		list.Append(e)
 	}
 
-	multi := list.Join().(MultiError)
+	multi := list.Join().(errors.MultiError)
 	assert.Exactly(t, []error{errs[0], errs[2]}, multi.Unwrap())
-	assert.Equal(t, Join(errs...), multi)
+	assert.Equal(t, errors.Join(errs...), multi)
 }

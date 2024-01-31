@@ -2,21 +2,24 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package errors
+package errgroup
 
 import (
+	"errors"
 	"sync/atomic"
 	"testing"
 
+	"github.com/go-pogo/errors/errlist"
+	"github.com/go-pogo/errors/internal"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestWaitGroup_Go(t *testing.T) {
-	disableTraceStack()
-	defer enableTraceStack()
+	internal.DisableTraceStack()
+	defer internal.EnableTraceStack()
 
-	want := New("some err")
-	var wg WaitGroup
+	want := errors.New("some err")
+	var wg Group
 	var i int32
 
 	wg.Go(func() error {
@@ -38,7 +41,7 @@ func TestWaitGroup_Go(t *testing.T) {
 }
 
 func TestWaitGroup_Wait(t *testing.T) {
-	var wg WaitGroup
+	var wg Group
 	t.Run("nil", func(t *testing.T) {
 		wg.Go(func() error {
 			return nil
@@ -47,17 +50,17 @@ func TestWaitGroup_Wait(t *testing.T) {
 		assert.Nil(t, wg.Wait())
 	})
 	t.Run("error", func(t *testing.T) {
-		disableTraceStack()
-		defer enableTraceStack()
+		internal.DisableTraceStack()
+		defer internal.EnableTraceStack()
 
-		wantErr := New("some err")
+		wantErr := errors.New("some err")
 		wg.Go(func() error {
 			return wantErr
 		})
 
 		assert.Same(t, wantErr, wg.Wait())
 
-		wantList := NewList(1)
+		wantList := errlist.New(1)
 		wantList.Append(wantErr)
 		assert.Exactly(t, wantList, wg.ErrorList())
 	})

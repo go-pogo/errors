@@ -2,13 +2,15 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package errors
+package errlist
 
 import (
 	"sync"
+
+	"github.com/go-pogo/errors"
 )
 
-var DefaultListCapacity uint = 8
+var DefaultCapacity uint = 8
 
 type ErrorLister interface {
 	// ErrorList returns a List of collected non-nil errors.
@@ -16,21 +18,21 @@ type ErrorLister interface {
 }
 
 type List struct {
-	list []error
 	sync.RWMutex
+	list []error
 }
 
 const (
-	panicNewListCap  = "errors.NewList: cap cannot be below 0"
-	panicNewListArgs = "errors.NewList: only one argument is allowed"
+	panicNewListCap  = "errors.New: cap cannot be below 0"
+	panicNewListArgs = "errors.New: only one argument is allowed"
 )
 
-// NewList creates a new List with a pre-allocated capacity of cap.
-func NewList(cap ...int) *List {
+// New creates a new List with a pre-allocated capacity of cap.
+func New(cap ...int) *List {
 	var c int
 	switch len(cap) {
 	case 0:
-		c = int(DefaultListCapacity)
+		c = int(DefaultCapacity)
 	case 1:
 		c = cap[0]
 		if c < 0 {
@@ -100,14 +102,8 @@ func prepend(errs []error, err error) []error {
 // Join function.
 func (l *List) Join() error {
 	l.RLock()
-	err := combine(l.list)
+	err := errors.Join(l.list...)
 	l.RUnlock()
 
 	return err
 }
-
-// Combine joins the collected errors. It uses the same rules and logic as the
-// Join function.
-//
-// Deprecated: Use Join instead.
-func (l *List) Combine() error { return l.Join() }

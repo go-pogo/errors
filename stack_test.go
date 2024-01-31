@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/go-pogo/errors/internal"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,7 +27,7 @@ func TestWithStack(t *testing.T) {
 		have := WithStack(err)
 		assert.ErrorIs(t, have, err)
 
-		if !traceStack {
+		if !internal.TraceStack {
 			return
 		}
 		if !assert.Len(t, have.StackTrace().Frames(), 1) {

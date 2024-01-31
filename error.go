@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/go-pogo/errors/internal"
 	"golang.org/x/xerrors"
 )
 
@@ -101,6 +102,7 @@ func errorf(format string, args []interface{}) error {
 }
 
 func (m Msg) Is(target error) bool {
+	//goland:noinspection GoTypeAssertionOnErrors
 	switch t := target.(type) {
 	case Msg:
 		return m == t
@@ -112,6 +114,7 @@ func (m Msg) Is(target error) bool {
 }
 
 func (m Msg) As(target interface{}) bool {
+	//goland:noinspection GoTypeAssertionOnErrors
 	if t, ok := target.(*Msg); ok {
 		*t = m
 		return true
@@ -133,7 +136,7 @@ type commonError struct {
 
 func newCommonErr(parent error, trace bool, skipFrames uint) *commonError {
 	ce := &commonError{error: parent}
-	if traceStack && trace {
+	if internal.TraceStack && trace {
 		ce.stack = newStackTrace(skipFrames + 1)
 	}
 	return ce
@@ -141,7 +144,7 @@ func newCommonErr(parent error, trace bool, skipFrames uint) *commonError {
 
 func withCause(ce *commonError, cause error) *commonError {
 	ce.cause = cause
-	if traceStack && ce.stack != nil {
+	if internal.TraceStack && ce.stack != nil {
 		skipStackTrace(cause, ce.stack.Len())
 	}
 	return ce
@@ -154,6 +157,7 @@ func (ce *commonError) StackTrace() *StackTrace { return ce.stack }
 func (ce *commonError) Unwrap() error { return ce.cause }
 
 func (ce *commonError) Is(target error) bool {
+	//goland:noinspection GoTypeAssertionOnErrors
 	if m, ok := ce.error.(Msg); ok {
 		return m.Is(target)
 	}
@@ -161,6 +165,7 @@ func (ce *commonError) Is(target error) bool {
 }
 
 func (ce *commonError) As(target interface{}) bool {
+	//goland:noinspection GoTypeAssertionOnErrors
 	if t, ok := target.(*commonError); ok {
 		*t = *ce
 		return true

@@ -4,9 +4,9 @@
 
 //go:build !notrace
 
-package errors
+package internal
 
-var traceStack = true
+var TraceStack = true
 
-func enableTraceStack()  { traceStack = true }
-func disableTraceStack() { traceStack = false }
+func EnableTraceStack()  { TraceStack = true }
+func DisableTraceStack() { TraceStack = false }
