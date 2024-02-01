@@ -30,6 +30,10 @@ func New(cap uint) *List {
 	}
 }
 
+// NewWithDefaultCapacity creates a new List with a pre-allocated capacity of
+// DefaultCapacity.
+func NewWithDefaultCapacity() *List { return New(DefaultCapacity) }
+
 // All returns the error slice within the list.
 func (l *List) All() []error {
 	l.RLock()
