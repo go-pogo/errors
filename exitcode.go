@@ -6,7 +6,6 @@ package errors
 
 import (
 	"fmt"
-	"os"
 )
 
 // ExitCoder interfaces provide access to an exit code.
@@ -60,15 +59,6 @@ func GetExitCodeOr(err error, or int) int {
 	}
 
 	return or
-}
-
-// FatalOnErr prints the error to stderr and exits the program with an exit
-// code that is not 0. When err is an ExitCoder its exit code is used.
-func FatalOnErr(err error) {
-	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "\nFatal error: %+v\n", err)
-		os.Exit(GetExitCodeOr(err, 1))
-	}
 }
 
 type exitCodeError struct {
