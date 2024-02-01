@@ -66,9 +66,8 @@ func ExampleAppend() {
 	doSomething := func() (err error) {
 		defer AppendFunc(&err, closeSomething)
 
-		_, unmarshalErr := unmarshal()
-		if unmarshalErr != nil {
-			Append(&err, unmarshalErr)
+		_, err = unmarshal()
+		if err != nil {
 			return err
 		}
 		return nil

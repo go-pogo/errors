@@ -55,46 +55,70 @@ func Join(errs ...error) error {
 	return newMultiErr(errs, 2)
 }
 
+// Append creates a multi error from two non-nil errors. If left is already a
+// multi error, the other error is appended to it. If either of the errors is
+// nil, the other error is returned.
+func Append(left, right error) error {
+	if left == nil {
+		return right
+	}
+	if right == nil {
+		return left
+	}
+
+	//goland:noinspection GoTypeAssertionOnErrors
+	if m, ok := left.(*multiErr); ok {
+		m.append(right)
+		return m
+	}
+	return newMultiErr([]error{left, right}, 1)
+}
+
 const (
-	panicAppendNilPtr     = "errors.Append: dest must not be a nil pointer"
+	panicAppendIntoNilPtr = "errors.AppendInto: dest must not be a nil pointer"
 	panicAppendFuncNilPtr = "errors.AppendFunc: dest must not be a nil pointer"
 	panicAppendFuncNilFn  = "errors.AppendFunc: fn must not be nil"
 )
 
-// Append appends multiple non-nil errors to a single multi error dest.
+// AppendInto appends multiple non-nil errors to a single multi error dest.
 // When the value of dest is nil and errs only contains a single error, its
 // value is set to the value of dest.
 //
-// Important: when using Append with defer, the pointer to the dest error
+// Important: when using AppendInto with defer, the pointer to the dest error
 // must be a named return variable. For additional details see
 // https://golang.org/ref/spec#Defer_statements.
-func Append(dest *error, errs ...error) {
+func AppendInto(dest *error, errs ...error) (errored bool) {
 	if dest == nil {
-		panic(panicAppendNilPtr)
+		panic(panicAppendIntoNilPtr)
 	}
 
+	var multi *multiErr
 	for _, err := range errs {
 		if err == nil {
 			continue
 		}
 
-		switch d := (*dest).(type) {
-		case nil:
+		if multi != nil {
+			multi.append(err)
+			continue
+		}
+
+		//goland:noinspection GoTypeAssertionOnErrors
+		if *dest == nil {
 			*dest = err
-
-		case *multiErr:
-			if internal.TraceStack {
-				skipStackTrace(err, d.stack.Len())
-			}
-			d.errs = append(d.errs, err)
-
-		default:
-			*dest = newMultiErr([]error{*dest, err}, 1)
+		} else if m, ok := (*dest).(*multiErr); ok {
+			multi = m
+			multi.append(err)
+		} else {
+			multi = newMultiErr([]error{*dest, err}, 1)
+			*dest = multi
 		}
 	}
+	return multi != nil
 }
 
-// AppendFunc appends the non-nil error result of fn to dest using Append.
+// AppendFunc appends the non-nil error result of fn to dest using
+// AppendInto.
 func AppendFunc(dest *error, fn func() error) {
 	if dest == nil {
 		panic(panicAppendFuncNilPtr)
@@ -102,7 +126,7 @@ func AppendFunc(dest *error, fn func() error) {
 	if fn == nil {
 		panic(panicAppendFuncNilFn)
 	}
-	Append(dest, fn())
+	AppendInto(dest, fn())
 }
 
 type multiErr struct {
@@ -123,6 +147,13 @@ func newMultiErr(errs []error, skipFrames uint) *multiErr {
 		skipStackTrace(err, skip)
 	}
 	return m
+}
+
+func (m *multiErr) append(err error) {
+	if internal.TraceStack {
+		skipStackTrace(err, m.stack.Len())
+	}
+	m.errs = append(m.errs, err)
 }
 
 func (m *multiErr) StackTrace() *StackTrace { return m.stack }

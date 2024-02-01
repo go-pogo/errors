@@ -27,14 +27,14 @@ func Must(args ...interface{}) {
 }
 
 // CatchPanic recovers from a panic and wraps it in an error. It then calls
-// Append with the provided dest *error and wrapped panic.
+// AppendInto with the provided dest *error and wrapped panic.
 // Use CatchPanic directly with defer. It is not possible to use CatchPanic
 // inside a deferred function, like:
 //
 //	defer func(){ CatchPanic(&err }()
 func CatchPanic(dest *error) {
 	if r := recover(); r != nil {
-		Append(dest, newCommonErr(&panicError{v: r}, false, 1))
+		AppendInto(dest, newCommonErr(&panicError{v: r}, false, 1))
 		if st := GetStackTrace(*dest); st != nil {
 			st.Skip = 1
 		}

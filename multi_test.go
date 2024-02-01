@@ -125,22 +125,22 @@ func TestJoin(t *testing.T) {
 	})
 }
 
-func TestAppend(t *testing.T) {
+func TestAppendInto(t *testing.T) {
 	t.Run("panic on nil dest ptr", func(t *testing.T) {
-		assert.PanicsWithValue(t, panicAppendNilPtr, func() {
-			Append(nil, New("bar"))
+		assert.PanicsWithValue(t, panicAppendIntoNilPtr, func() {
+			AppendInto(nil, New("bar"))
 		})
 	})
 	t.Run("with nil", func(t *testing.T) {
 		err := New("err")
 		want := err.Error()
-		Append(&err, nil)
+		AppendInto(&err, nil)
 		assert.Equal(t, want, err.Error())
 	})
 	t.Run("with error", func(t *testing.T) {
 		var have error
 		want := stderrors.New("foobar")
-		Append(&have, want)
+		AppendInto(&have, want)
 
 		assert.Same(t, want, have)
 	})
@@ -152,9 +152,11 @@ func TestAppend(t *testing.T) {
 			fmt.Errorf("another %s", "error"),
 		}
 
-		Append(&have, errs[0]) // set value to *have
-		Append(&have, errs[1]) // create multi error from errors 0 and 1
-		Append(&have, errs[2]) // append error 2 to multi error
+		AppendInto(&have,
+			errs[0], // set value to *have
+			errs[1], // create multi error from errors 0 and 1
+			errs[2], // append error 2 to multi error
+		)
 
 		assert.IsType(t, new(multiErr), have)
 
@@ -166,8 +168,8 @@ func TestAppend(t *testing.T) {
 			assert.Equal(t, len(multi.stack.frames), 1)
 
 			_, file, line, _ := runtime.Caller(0)
-			// line must point to the last Append call a couple of lines above
-			assert.Contains(t, multi.StackTrace().String(), fmt.Sprintf("%s:%d", file, line-12))
+			// line must point to the last AppendInto call a couple of lines above
+			assert.Contains(t, multi.StackTrace().String(), fmt.Sprintf("%s:%d", file, line-15))
 		}
 	})
 }
