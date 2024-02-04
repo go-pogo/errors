@@ -24,7 +24,8 @@ type Group struct {
 
 // WithContext returns a new Group and an associated context.Context derived
 // from ctx. Unlike golang.org/x/sync/errgroup.Group, the derived context is not
-// canceled the first time a function passed to Go returns a non-nil error.
+// canceled the first time a function passed to Group.Go returns a non-nil
+// error.
 func WithContext(ctx context.Context) (*Group, context.Context) {
 	ctx, cancel := context.WithCancelCause(ctx)
 	return &Group{cancel: cancel}, ctx
