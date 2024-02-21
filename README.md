@@ -105,8 +105,8 @@ defer errors.CatchPanic(&err)
 ```
 
 ## Backwards compatibility
-Unwrap, Is, As are backwards compatible with the standard library's `errors`
-package and act the same.
+`Unwrap`, `Is` and `As` are backwards compatible with the standard library's 
+`errors` package and act the same.
 
 ## Documentation
 Additional detailed documentation is available at [pkg.go.dev][doc-url]
