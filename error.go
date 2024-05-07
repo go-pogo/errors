@@ -6,10 +6,9 @@ package errors
 
 import (
 	"fmt"
-	"reflect"
-
 	"github.com/go-pogo/errors/internal"
 	"golang.org/x/xerrors"
+	"reflect"
 )
 
 // Msg is a string alias which can also be used as a basic error. This is

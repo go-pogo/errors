@@ -6,11 +6,10 @@ package errors
 
 import (
 	stderrors "errors"
-	"testing"
-
 	"github.com/go-pogo/errors/internal"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/xerrors"
+	"testing"
 )
 
 func BenchmarkNew(b *testing.B) {

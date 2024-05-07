@@ -6,10 +6,9 @@ package errors
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/go-pogo/errors/internal"
 	"golang.org/x/xerrors"
+	"strings"
 )
 
 // MultiError is an error which unwraps into multiple underlying errors.

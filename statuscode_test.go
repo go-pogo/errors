@@ -6,10 +6,9 @@ package errors
 
 import (
 	stderrors "errors"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestWithStatusCode(t *testing.T) {

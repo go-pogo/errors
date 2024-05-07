@@ -6,12 +6,11 @@ package errors
 
 import (
 	"fmt"
+	"github.com/go-pogo/errors/internal"
+	"golang.org/x/xerrors"
 	"io"
 	"runtime"
 	"strings"
-
-	"github.com/go-pogo/errors/internal"
-	"golang.org/x/xerrors"
 )
 
 // StackTracer interfaces provide access to a stack of traced StackTrace.

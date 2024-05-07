@@ -7,9 +7,8 @@ package errors
 import (
 	stderrors "errors"
 	"fmt"
-	"testing"
-
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestKind(t *testing.T) {

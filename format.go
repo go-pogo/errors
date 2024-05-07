@@ -6,7 +6,6 @@ package errors
 
 import (
 	"fmt"
-
 	"golang.org/x/xerrors"
 )
 

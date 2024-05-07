@@ -8,9 +8,8 @@ package errors
 
 import (
 	stderrors "errors"
-	"testing"
-
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestGetStackTrace(t *testing.T) {

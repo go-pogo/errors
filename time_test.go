@@ -5,10 +5,9 @@
 package errors
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestWithTime(t *testing.T) {

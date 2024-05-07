@@ -7,12 +7,11 @@ package errors
 import (
 	stderrors "errors"
 	"fmt"
+	"github.com/go-pogo/errors/internal"
+	"github.com/stretchr/testify/assert"
 	"os"
 	"reflect"
 	"testing"
-
-	"github.com/go-pogo/errors/internal"
-	"github.com/stretchr/testify/assert"
 )
 
 type errChainHelper []error

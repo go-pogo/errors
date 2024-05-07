@@ -7,10 +7,9 @@ package errors
 import (
 	stderrors "errors"
 	"fmt"
-	"testing"
-
 	"github.com/go-pogo/errors/internal"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestWrapWrapf(t *testing.T) {
