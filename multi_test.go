@@ -111,16 +111,44 @@ func BenchmarkFilter(b *testing.B) {
 }
 
 func TestJoin(t *testing.T) {
-	t.Run("with empty and nil", func(t *testing.T) {
+	t.Run("with empty", func(t *testing.T) {
 		assert.Nil(t, Join())
+	})
+	t.Run("with nil", func(t *testing.T) {
 		assert.Nil(t, Join(nil))
+	})
+	t.Run("with nil and error", func(t *testing.T) {
+		want := stderrors.New("first error")
+		have := Join(nil, want, nil)
+		assert.Same(t, want, have)
 	})
 	t.Run("with errors", func(t *testing.T) {
 		err1 := stderrors.New("first error")
 		err2 := Errorf("err with trace")
+
 		//goland:noinspection GoTypeAssertionOnErrors
 		multi := Join(err1, err2).(*multiErr)
+		assert.Exactly(t, []error{err1, err2}, multi.Unwrap())
+	})
+}
 
+func TestAppend(t *testing.T) {
+	t.Run("left nil", func(t *testing.T) {
+		want := New("some err")
+		have := Append(nil, want)
+		assert.Same(t, want, have)
+	})
+	t.Run("right nil", func(t *testing.T) {
+		want := New("some err")
+		have := Append(want, nil)
+		assert.Same(t, want, have)
+	})
+	t.Run("new multi", func(t *testing.T) {
+		err1 := stderrors.New("left")
+		err2 := New("right")
+
+		//goland:noinspection GoTypeAssertionOnErrors
+		multi := Append(err1, err2).(*multiErr)
 		assert.Exactly(t, []error{err1, err2}, multi.Unwrap())
 	})
 }
@@ -141,7 +169,6 @@ func TestAppendInto(t *testing.T) {
 		var have error
 		want := stderrors.New("foobar")
 		AppendInto(&have, want)
-
 		assert.Same(t, want, have)
 	})
 	t.Run("with errors", func(t *testing.T) {
@@ -190,7 +217,6 @@ func TestAppendFunc(t *testing.T) {
 		var have error
 		want := stderrors.New("foobar")
 		AppendFunc(&have, func() error { return want })
-
 		assert.Same(t, want, have)
 	})
 }
