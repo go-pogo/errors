@@ -82,6 +82,10 @@ func TestWithKind(t *testing.T) {
 			err:  WithKind(stderrors.New("root cause error"), "foobar"),
 			kind: "qux xoo",
 		},
+		"wrapped std error with same kind": {
+			err:  WithKind(stderrors.New("root cause error"), "foobar"),
+			kind: "foobar",
+		},
 		"std wrapped error": {
 			err:  fmt.Errorf("bar: %w", stderrors.New("absolute horror")),
 			kind: "baz",

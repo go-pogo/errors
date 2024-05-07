@@ -52,6 +52,12 @@ func WithKind(err error, kind Kind) error {
 		return err
 	}
 
+	//goland:noinspection GoTypeAssertionOnErrors,GoDirectComparisonOfErrors
+	if k, ok := err.(*kindError); ok && k.kind == kind {
+		// no need to double wrap with same Kind
+		return k
+	}
+
 	e := &kindError{
 		kind:  kind,
 		cause: err,
