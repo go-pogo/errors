@@ -150,6 +150,15 @@ func TestAppend(t *testing.T) {
 		multi := Append(err1, err2).(*multiErr)
 		assert.Exactly(t, []error{err1, err2}, multi.Unwrap())
 	})
+	t.Run("new multi", func(t *testing.T) {
+		err1 := stderrors.New("left")
+		err2 := New("right")
+		err3 := New("another")
+
+		//goland:noinspection GoTypeAssertionOnErrors
+		multi := Append(Append(err1, err2), err3).(*multiErr)
+		assert.Exactly(t, []error{err1, err2, err3}, multi.Unwrap())
+	})
 }
 
 func TestAppendInto(t *testing.T) {
