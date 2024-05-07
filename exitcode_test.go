@@ -8,8 +8,6 @@ import (
 	stderrors "errors"
 	"github.com/stretchr/testify/assert"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestWithExitCode(t *testing.T) {
