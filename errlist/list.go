@@ -5,9 +5,8 @@
 package errlist
 
 import (
-	"sync"
-
 	"github.com/go-pogo/errors"
+	"sync"
 )
 
 var DefaultCapacity uint = 8
@@ -19,25 +18,24 @@ type ErrorLister interface {
 
 // List is a thread-safe error list. Its zero value is ready to use.
 type List struct {
-	sync.RWMutex
+	mut  sync.RWMutex
 	list []error
 }
 
-// New creates a new List with a pre-allocated capacity of cap.
-func New(cap uint) *List {
-	return &List{
-		list: make([]error, 0, cap),
-	}
+// New creates a new List using the provided slice.
+func New(slice []error) *List {
+	return &List{list: slice}
 }
 
-// NewWithDefaultCapacity creates a new List with a pre-allocated capacity of
-// DefaultCapacity.
-func NewWithDefaultCapacity() *List { return New(DefaultCapacity) }
+// NewWithCapacity creates a new List with a pre-allocated capacity.
+func NewWithCapacity(cap uint) *List {
+	return &List{list: make([]error, 0, cap)}
+}
 
 // All returns the error slice within the list.
 func (l *List) All() []error {
-	l.RLock()
-	defer l.RUnlock()
+	l.mut.RLock()
+	defer l.mut.RUnlock()
 	if l.list == nil {
 		return nil
 	}
@@ -48,10 +46,18 @@ func (l *List) All() []error {
 }
 
 // Len returns the number of errors within the List.
-func (l *List) Len() int { return len(l.list) }
+func (l *List) Len() int {
+	l.mut.RLock()
+	defer l.mut.RUnlock()
+	return len(l.list)
+}
 
 // Empty return true when the list is empty.
-func (l *List) Empty() bool { return len(l.list) == 0 }
+func (l *List) Empty() bool {
+	l.mut.RLock()
+	defer l.mut.RUnlock()
+	return len(l.list) == 0
+}
 
 // Append an error to the list. It guarantees only non-nil errors are added.
 // It returns false when a nil error is encountered. And true when the error
@@ -61,12 +67,12 @@ func (l *List) Append(err error) bool {
 		return false
 	}
 
-	l.Lock()
+	l.mut.Lock()
 	if l.list == nil {
 		l.list = make([]error, 0, DefaultCapacity)
 	}
 	l.list = append(l.list, err)
-	l.Unlock()
+	l.mut.Unlock()
 	return true
 }
 
@@ -78,14 +84,14 @@ func (l *List) Prepend(err error) bool {
 		return false
 	}
 
-	l.Lock()
+	l.mut.Lock()
 	if l.list == nil {
 		l.list = make([]error, 0, DefaultCapacity)
 		l.list = append(l.list, err)
 	} else {
 		l.list = prepend(l.list, err)
 	}
-	l.Unlock()
+	l.mut.Unlock()
 	return true
 }
 
@@ -101,8 +107,7 @@ func prepend(errs []error, err error) []error {
 // Join the collected errors. It uses the same rules and logic as the
 // Join function.
 func (l *List) Join() error {
-	l.RLock()
-	err := errors.Join(l.list...)
-	l.RUnlock()
-	return err
+	l.mut.RLock()
+	defer l.mut.RUnlock()
+	return errors.Join(l.list...)
 }

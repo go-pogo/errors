@@ -6,11 +6,10 @@ package errlist
 
 import (
 	stderrors "errors"
-	"testing"
-
 	"github.com/go-pogo/errors"
 	"github.com/go-pogo/errors/internal"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func assertEmptyList(t *testing.T, list *List) {
@@ -19,16 +18,18 @@ func assertEmptyList(t *testing.T, list *List) {
 }
 
 func TestNew(t *testing.T) {
-	t.Run("default capacity", func(t *testing.T) {
-		list := New(DefaultCapacity)
-		assert.Exactly(t, int(DefaultCapacity), cap(list.list))
-		assertEmptyList(t, list)
-	})
-	t.Run("set capacity", func(t *testing.T) {
-		list := New(22)
-		assert.Equal(t, 22, cap(list.list))
-		assertEmptyList(t, list)
-	})
+	list := New(make([]error, 0, DefaultCapacity))
+	assert.Exactly(t, int(DefaultCapacity), cap(list.list))
+	assertEmptyList(t, list)
+}
+
+func TestNewWithCapacity(t *testing.T) {
+	list := NewWithCapacity(22)
+	assert.Equal(t, 22, cap(list.list))
+	assertEmptyList(t, list)
+}
+
+func TestList(t *testing.T) {
 	t.Run("zero value", func(t *testing.T) {
 		var list List
 		assert.Nil(t, list.list)

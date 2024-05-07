@@ -60,7 +60,7 @@ func TestWaitGroup_Wait(t *testing.T) {
 
 		assert.Same(t, wantErr, wg.Wait())
 
-		wantList := errlist.New(1)
+		wantList := errlist.NewWithCapacity(1)
 		wantList.Append(wantErr)
 		assert.Exactly(t, wantList, wg.ErrorList())
 	})
