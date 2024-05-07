@@ -21,6 +21,7 @@ const UnknownKind Kind = ""
 type Kind string
 
 func (k Kind) Is(target error) bool {
+	//goland:noinspection GoTypeAssertionOnErrors
 	switch t := target.(type) {
 	case Kind:
 		return k == t
@@ -31,6 +32,7 @@ func (k Kind) Is(target error) bool {
 }
 
 func (k Kind) As(target interface{}) bool {
+	//goland:noinspection GoTypeAssertionOnErrors
 	if t, ok := target.(*Kind); ok {
 		*t = k
 		return true
@@ -47,6 +49,7 @@ func (k Kind) GoString() string { return `errors.Kind("` + string(k) + `")` }
 
 // WithKind wraps an error with Kind, therefore extending the error chain.
 func WithKind(err error, kind Kind) error {
+	//goland:noinspection GoDirectComparisonOfErrors
 	if err == nil || kind == UnknownKind {
 		return err
 	}
@@ -76,6 +79,7 @@ func GetKind(err error) Kind { return GetKindOr(err, UnknownKind) }
 // it returns the provided Kind or.
 func GetKindOr(err error, or Kind) Kind {
 	err = Unembed(err)
+	//goland:noinspection GoTypeAssertionOnErrors
 	if e, ok := err.(*kindError); ok {
 		return e.kind
 	}
@@ -106,6 +110,7 @@ func (e *kindError) Format(s fmt.State, v rune) {
 // next error in the error chain.
 func (e *kindError) FormatError(p Printer) error {
 	PrintError(p, e)
+	//goland:noinspection GoTypeAssertionOnErrors
 	if _, ok := e.cause.(Msg); ok {
 		return nil
 	}
@@ -121,7 +126,7 @@ func (e *kindError) Error() string { return e.kind.String() + ": " + e.cause.Err
 // GoString prints the error in basic Go syntax.
 func (e *kindError) GoString() string {
 	return fmt.Sprintf(
-		"*kindError{kind: %s, cause: %#v}",
+		"errors.kindError{kind: %s, cause: %#v}",
 		e.kind.String(),
 		e.cause,
 	)

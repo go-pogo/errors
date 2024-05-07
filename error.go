@@ -188,11 +188,11 @@ func (ce *commonError) FormatError(p Printer) error {
 // GoString prints the error in basic Go syntax.
 func (ce *commonError) GoString() string {
 	if ce.cause == nil {
-		return fmt.Sprintf("*commonError{error: %#v}", ce.error)
+		return fmt.Sprintf("errors.commonError{error: %#v}", ce.error)
 	}
 
 	return fmt.Sprintf(
-		"*commonError{error: %#v, cause: %#v}",
+		"errors.commonError{error: %#v, cause: %#v}",
 		ce.error,
 		ce.cause,
 	)

@@ -28,6 +28,7 @@ func WithTime(err error, when time.Time) Timer {
 	if err == nil {
 		return nil
 	}
+	//goland:noinspection GoTypeAssertionOnErrors
 	if e, ok := err.(TimerSetter); ok {
 		e.SetTime(when)
 		return e
@@ -46,6 +47,7 @@ func GetTime(err error) (time.Time, bool) {
 	var has bool
 
 	for {
+		//goland:noinspection GoTypeAssertionOnErrors
 		if e, ok := err.(Timer); ok {
 			dt = e.Time()
 			has = true
@@ -70,7 +72,7 @@ func (e *dateTimeError) Time() time.Time     { return e.time }
 // GoString prints the error in basic Go syntax.
 func (e *dateTimeError) GoString() string {
 	return fmt.Sprintf(
-		"*dateTimeError{time: %s, embedErr: %#v}",
+		"errors.dateTimeError{time: %s, embedErr: %#v}",
 		e.time.String(),
 		e.error,
 	)

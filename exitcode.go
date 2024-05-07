@@ -49,6 +49,7 @@ func GetExitCode(err error) int { return GetExitCodeOr(err, 0) }
 // in err's error chain. If none is found, it returns the provided value or.
 func GetExitCodeOr(err error, or int) int {
 	for {
+		//goland:noinspection GoTypeAssertionOnErrors
 		if e, ok := err.(ExitCoder); ok {
 			return e.ExitCode()
 		}
@@ -72,7 +73,7 @@ func (e *exitCodeError) ExitCode() int     { return e.exitCode }
 // GoString prints the error in basic Go syntax.
 func (e *exitCodeError) GoString() string {
 	return fmt.Sprintf(
-		"*exitCodeError{exitCode: %d, embedErr: %#v}",
+		"errors.exitCodeError{exitCode: %d, embedErr: %#v}",
 		e.exitCode,
 		e.error,
 	)

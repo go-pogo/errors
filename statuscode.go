@@ -68,7 +68,7 @@ func (e *statusCodeError) StatusCode() int     { return e.statusCode }
 // GoString prints the error in basic Go syntax.
 func (e *statusCodeError) GoString() string {
 	return fmt.Sprintf(
-		"*statusCodeError{statusCode: %d, embedErr: %#v}",
+		"errors.statusCodeError{statusCode: %d, embedErr: %#v}",
 		e.statusCode,
 		e.error,
 	)

@@ -62,5 +62,5 @@ func (p *panicError) Error() string {
 }
 
 func (p *panicError) GoString() string {
-	return fmt.Sprintf("*panicError{v: %#v}", p.v)
+	return fmt.Sprintf("errors.panicError{v: %#v}", p.v)
 }

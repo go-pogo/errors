@@ -19,6 +19,7 @@ type Embedder interface {
 // error that was wrapped with extra context.
 // If err is not an Embedder, Unembed returns err as provided.
 func Unembed(err error) error {
+	//goland:noinspection GoTypeAssertionOnErrors
 	if u, ok := err.(Embedder); ok {
 		return Unembed(u.Unembed())
 	}
@@ -60,5 +61,5 @@ func (e *embedError) FormatError(p Printer) error {
 
 // GoString prints the error in basic Go syntax.
 func (e *embedError) GoString() string {
-	return fmt.Sprintf("*embedError{error: %#v}", e.error)
+	return fmt.Sprintf("errors.embedError{error: %#v}", e.error)
 }
