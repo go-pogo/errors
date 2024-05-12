@@ -2,8 +2,20 @@ name: Test
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - '.run/**'
+      - '.editorconfig'
+      - '*ignore'
+      - 'Taskfile.*'
   pull_request:
     branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - '.run/**'
+      - '.editorconfig'
+      - '*ignore'
+      - 'Taskfile.*'
 
 jobs:
   test:
