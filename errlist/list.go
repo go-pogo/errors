@@ -59,6 +59,19 @@ func (l *List) Empty() bool {
 	return len(l.list) == 0
 }
 
+func (l *List) Contains(err error) bool {
+	l.mut.RLock()
+	defer l.mut.RUnlock()
+
+	matchCause := errors.IsCause(err)
+	for _, e := range l.list {
+		if errors.IsCause(e) == matchCause && errors.Is(err, e) {
+			return true
+		}
+	}
+	return false
+}
+
 // Append an error to the list. It guarantees only non-nil errors are added.
 // It returns false when a nil error is encountered. And true when the error
 // is appended to the list.

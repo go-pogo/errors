@@ -6,6 +6,7 @@ package errgroup
 
 import (
 	"context"
+	"github.com/go-pogo/errors"
 	"github.com/go-pogo/errors/errlist"
 	"sync"
 )
@@ -50,7 +51,12 @@ func (g *Group) Wait() error {
 func (g *Group) Go(fn func() error) {
 	g.wg.Add(1)
 	go func() {
-		g.errs.Append(fn())
+		if err := fn(); err != nil {
+			if !errors.IsCause(err) || !g.errs.Contains(err) {
+				g.errs.Append(err)
+			}
+		}
+
 		g.wg.Done()
 	}()
 }
