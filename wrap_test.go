@@ -185,3 +185,34 @@ func TestCause(t *testing.T) {
 		})
 	}
 }
+
+func TestIsCause(t *testing.T) {
+	tests := map[string]struct {
+		err  error
+		want bool
+	}{
+		"std error": {
+			err:  stderrors.New("foo bar"),
+			want: true,
+		},
+		"wrapped std error": {
+			err: Wrap(stderrors.New("foo bar"), "wrap"),
+		},
+		"wrap fmt error": {
+			err: fmt.Errorf("foo bar: %w", stderrors.New("baz")),
+		},
+		"error": {
+			err:  New("foo bar"),
+			want: true,
+		},
+		"wrapped error": {
+			err: Wrap(stderrors.New("foo bar"), "wrap"),
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, tc.want, IsCause(tc.err))
+		})
+	}
+}

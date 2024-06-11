@@ -102,6 +102,9 @@ func Cause(err error) error {
 	return err
 }
 
+// IsCause indicates if error is the root cause of a possible error chain.
+func IsCause(err error) bool { return Unwrap(Unembed(err)) == nil }
+
 // Is reports whether any error in err's chain matches target. It is fully
 // compatible with both errors.Is and xerrors.Is.
 //
