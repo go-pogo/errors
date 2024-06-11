@@ -18,8 +18,6 @@ type Wrapper interface {
 	xerrors.Wrapper
 }
 
-const panicUseWithKindInstead = "errors.Wrap: use errors.WithKind instead to wrap an error with an errors.Kind"
-
 // Wrap creates a new error, which implements the StackTracer, Wrapper and
 // Formatter interfaces, that wraps around the causing error. Argument msg can
 // be either a string or Msg.
@@ -48,9 +46,6 @@ func Wrap(cause error, msg interface{}) error {
 		parent = v
 	case *Msg:
 		parent = *v
-
-	case Kind, *Kind:
-		panic(panicUseWithKindInstead)
 
 	default:
 		panic(unsupportedType("errors.Wrap", reflect.TypeOf(v).String()))

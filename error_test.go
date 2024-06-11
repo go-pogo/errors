@@ -176,7 +176,6 @@ func TestMsg_Is(t *testing.T) {
 			"different msg string": Msg("blabla"),
 			"stderror":             stderrors.New(msg),
 			"error":                New(msg),
-			"Kind":                 Kind(msg),
 		}
 		for name, target := range targets {
 			t.Run(name, func(t *testing.T) {

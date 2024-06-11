@@ -64,18 +64,13 @@ func TestWrap(t *testing.T) {
 	}
 	for name, input := range tests {
 		t.Run(name, func(t *testing.T) {
+			//goland:noinspection GoTypeAssertionOnErrors
 			have := Wrap(cause, input).(*commonError)
 			assert.Equal(t, msg, have.error)
 			assert.Same(t, cause, Unwrap(have))
 			assert.Same(t, have, Unembed(have))
 		})
 	}
-
-	t.Run("with error", func(t *testing.T) {
-		assert.PanicsWithValue(t, panicUseWithKindInstead, func() {
-			_ = Wrap(cause, Kind(str))
-		})
-	})
 
 	tests = map[string]interface{}{
 		"int":                 10,

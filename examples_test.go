@@ -31,25 +31,6 @@ func ExampleMsg() {
 	// Output: something happened
 }
 
-func ExampleWithKind() {
-	const (
-		ErrSomethingWentWrong Msg  = "something went wrong"
-		SomeKindOfError       Kind = "some kind of error"
-	)
-
-	doSomethingElse := func() error {
-		return New(ErrSomethingWentWrong)
-	}
-	doSomething := func() error {
-		err := doSomethingElse()
-		return WithKind(err, SomeKindOfError)
-	}
-
-	err := doSomething()
-	fmt.Println(err)
-	// Output: some kind of error: something went wrong
-}
-
 func ExampleAppend() {
 	type Result struct{}
 

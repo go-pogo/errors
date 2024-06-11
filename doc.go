@@ -15,19 +15,12 @@ text message and whom can trace stack frames. errors.Wrap and errors.Wrapf
 create errors by wrapping an existing error with a similar error like
 errors.New and errors.Errorf.
 
-# Msg and Kind
+# Msg
 
 Instead of defining error messages as global variables, it is possible to define
 them as constants using errors.Msg.
 
 	const ErrSomethingWentWrong errors.Msg = "something went wrong"
-
-This same can be done with errors.Kind:
-
-	const InvalidOpError errors.Kind = "invalid operation error"
-	err = errors.WithKind(err, InvalidOpError)
-
-	errors.Is(err, InvalidOpError) // true
 
 # Formatting
 

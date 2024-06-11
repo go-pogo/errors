@@ -33,7 +33,6 @@ func TestWithFormatter(t *testing.T) {
 		"multiErr":       newMultiErr([]error{New("hi"), stderrors.New("there")}, 0),
 		"with exit code": WithExitCode(New("cause"), 1),
 		"with formatter": WithFormatter(New("cause")),
-		"with kind":      WithKind(Msg("my bad"), "failure"),
 		// "with stack":     WithStack(fmt.Errorf("failure: %w", stderrors.New("my bad"))),
 		"with time": WithTime(New("cause"), time.Now()),
 	}
@@ -68,26 +67,6 @@ func TestFormatError(t *testing.T) {
 			err:   Wrap(Wrap(New("some err"), "failure"), "whoops"),
 			want1: "whoops: failure: some err",
 			want2: "whoops:\n  - failure:\n  - some err",
-		},
-		"kind": {
-			err:   WithKind(New("some err"), "failure"),
-			want1: "failure: some err",
-			want2: "failure: some err:\n  - some err",
-		},
-		"kind Msg": {
-			err:   WithKind(Msg("some err"), "failure"),
-			want1: "failure: some err",
-			want2: "failure: some err",
-		},
-		"wrap kind": {
-			err:   Wrap(WithKind(New("some err"), "failure"), "whoops"),
-			want1: "whoops: failure: some err",
-			want2: "whoops:\n  - failure: some err:\n  - some err",
-		},
-		"kind wrap": {
-			err:   WithKind(Wrap(New("some err"), "failure"), "whoops"),
-			want1: "whoops: failure: some err",
-			want2: "whoops: failure:\n  - failure:\n  - some err",
 		},
 	}
 

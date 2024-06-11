@@ -31,14 +31,6 @@ func (h *errChainHelper) prepend(err error) error {
 //goland:noinspection GoMixedReceiverTypes
 func (h errChainHelper) last() error { return h[len(h)-1] }
 
-func wrappers() map[string]func(parent error) error {
-	res := provideEmbedders()
-	res["WithKind"] = func(parent error) error {
-		return WithKind(parent, "some kind")
-	}
-	return res
-}
-
 // test if the root cause error matches all wrapping errors in the chain
 func TestIs(t *testing.T) {
 	baseErr := New("root cause")
@@ -53,12 +45,9 @@ func TestIs(t *testing.T) {
 		"std wrap":  {stdBase, stdWrap},
 
 		"std with stack": {stdBase, WithStack(stdBase)},
-
-		"base with kind": {baseErr, WithKind(baseErr, "kind")},
-		"std with kind":  {stdBase, WithKind(stdBase, "kind")},
 	}
 
-	for group, wrapFn := range wrappers() {
+	for group, wrapFn := range provideEmbedders() {
 		t.Run(group, func(t *testing.T) {
 			for name, chain := range chains {
 				t.Run(name, func(t *testing.T) {
@@ -78,17 +67,17 @@ func TestIs(t *testing.T) {
 	}
 
 	t.Run("manual", func(t *testing.T) {
-		rootCause := stderrors.New("root cause")
-		withKind := WithKind(rootCause, "some kind")
-		withFormatter := WithFormatter(withKind)
+		cause := stderrors.New("root cause")
+		wrapped := Wrap(cause, Msg("second"))
+		withFormatter := WithFormatter(wrapped)
 
 		// both upgrades should match with the original error
-		assert.ErrorIs(t, withKind, rootCause)
-		assert.ErrorIs(t, withFormatter, rootCause)
+		assert.ErrorIs(t, wrapped, cause)
+		assert.ErrorIs(t, withFormatter, cause)
 
 		// both upgrades should match with each other
-		assert.ErrorIs(t, withKind, withFormatter)
-		assert.ErrorIs(t, withFormatter, withKind)
+		assert.ErrorIs(t, wrapped, withFormatter)
+		assert.ErrorIs(t, withFormatter, wrapped)
 	})
 
 	t.Run("multi", func(t *testing.T) {

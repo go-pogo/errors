@@ -18,7 +18,6 @@ func provideErrors(withEmbedders bool) map[string]error {
 		"std error": func() error { return stderrors.New("some err") },
 		"error":     func() error { return New("whoopsie") },
 		"Msg":       func() error { return Msg("my error message") },
-		"Kind":      func() error { return Kind("my error kind") },
 	}
 	for a, errFn := range errs {
 		res[a] = errFn()

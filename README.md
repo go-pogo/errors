@@ -42,21 +42,12 @@ go get github.com/go-pogo/errors
 import "github.com/go-pogo/errors"
 ```
 
-## `Msg` and `Kind`
+## `Msg`
 Instead of defining error messages as global variables, it is possible to define
 them as constants using `errors.Msg`.
 
 ```go
 const ErrSomethingWentWrong errors.Msg = "something went wrong"
-```
-
-This same can be done with `errors.Kind`:
-
-```go
-const InvalidOpError errors.Kind = "invalid operation error"
-err = errors.WithKind(err, InvalidOpError)
-
-errors.Is(err, InvalidOpError) // true
 ```
 
 ## Formatting
