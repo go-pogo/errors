@@ -52,8 +52,8 @@ func (l *List) Len() int {
 	return len(l.list)
 }
 
-// Empty return true when the list is empty.
-func (l *List) Empty() bool {
+// IsEmpty return true when the list is empty.
+func (l *List) IsEmpty() bool {
 	l.mut.RLock()
 	defer l.mut.RUnlock()
 	return len(l.list) == 0

@@ -14,7 +14,7 @@ import (
 
 func assertEmptyList(t *testing.T, list *List) {
 	assert.Exactly(t, 0, list.Len())
-	assert.True(t, list.Empty())
+	assert.True(t, list.IsEmpty())
 }
 
 func TestNew(t *testing.T) {
