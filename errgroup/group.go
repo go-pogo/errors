@@ -52,11 +52,12 @@ func (g *Group) Go(fn func() error) {
 	g.wg.Add(1)
 	go func() {
 		if err := fn(); err != nil {
-			if !errors.IsCause(err) || !g.errs.Contains(err) {
+			if errors.IsCause(err) {
+				g.errs.AppendUnique(err)
+			} else {
 				g.errs.Append(err)
 			}
 		}
-
 		g.wg.Done()
 	}()
 }

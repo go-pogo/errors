@@ -32,19 +32,6 @@ func NewWithCapacity(cap uint) *List {
 	return &List{list: make([]error, 0, cap)}
 }
 
-// All returns the error slice within the list.
-func (l *List) All() []error {
-	l.mut.RLock()
-	defer l.mut.RUnlock()
-	if l.list == nil {
-		return nil
-	}
-
-	res := make([]error, 0, len(l.list))
-	res = append(res, l.list...)
-	return res
-}
-
 // Len returns the number of errors within the List.
 func (l *List) Len() int {
 	l.mut.RLock()
@@ -59,52 +46,113 @@ func (l *List) IsEmpty() bool {
 	return len(l.list) == 0
 }
 
-func (l *List) Contains(err error) bool {
+// All returns the error slice within the list.
+func (l *List) All() []error {
 	l.mut.RLock()
 	defer l.mut.RUnlock()
-
-	matchCause := errors.IsCause(err)
-	for _, e := range l.list {
-		if errors.IsCause(e) == matchCause && errors.Is(err, e) {
-			return true
-		}
+	if l.list == nil {
+		return nil
 	}
-	return false
+
+	res := make([]error, 0, len(l.list))
+	res = append(res, l.list...)
+	return res
 }
 
-// Append an error to the list. It guarantees only non-nil errors are added.
-// It returns false when a nil error is encountered. And true when the error
-// is appended to the list.
+// Join the collected errors. It uses the same rules and logic as the
+// Join function.
+func (l *List) Join() error {
+	l.mut.RLock()
+	defer l.mut.RUnlock()
+	return errors.Join(l.list...)
+}
+
+// Append an error to the List. It guarantees only non-nil errors are added.
+// It returns true when the error is appended to the list, false otherwise.
 func (l *List) Append(err error) bool {
 	if err == nil {
 		return false
 	}
 
 	l.mut.Lock()
+	defer l.mut.Unlock()
+
 	if l.list == nil {
 		l.list = make([]error, 0, DefaultCapacity)
 	}
 	l.list = append(l.list, err)
-	l.mut.Unlock()
 	return true
 }
 
+// AppendUnique appends an error to the List and guarantees that the error is
+// non-nil and unique within the List.
+// It returns true when the error is appended to the list, false otherwise.
+func (l *List) AppendUnique(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	l.mut.Lock()
+	defer l.mut.Unlock()
+
+	if l.list == nil {
+		l.list = make([]error, 0, DefaultCapacity)
+		l.list = append(l.list, err)
+		return true
+	}
+	if l.isUnique(err) {
+		l.list = append(l.list, err)
+		return true
+	}
+	return false
+}
+
 // Prepend an error to the list. It guarantees only non-nil errors are added.
-// It returns false when a nil error is encountered. And true when the error
-// is prepended to the list.
+// It returns true when the error is appended to the list, false otherwise.
 func (l *List) Prepend(err error) bool {
 	if err == nil {
 		return false
 	}
 
 	l.mut.Lock()
+	defer l.mut.Unlock()
+
 	if l.list == nil {
 		l.list = make([]error, 0, DefaultCapacity)
 		l.list = append(l.list, err)
 	} else {
 		l.list = prepend(l.list, err)
 	}
-	l.mut.Unlock()
+	return true
+}
+
+func (l *List) PrependUnique(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	l.mut.Lock()
+	defer l.mut.Unlock()
+
+	if l.list == nil {
+		l.list = make([]error, 0, DefaultCapacity)
+		l.list = append(l.list, err)
+		return true
+	}
+	if l.isUnique(err) {
+		l.list = prepend(l.list, err)
+		return true
+	}
+	return false
+}
+
+func (l *List) isUnique(err error) bool {
+	matchCause := errors.IsCause(err)
+	for _, e := range l.list {
+		if errors.IsCause(e) == matchCause && errors.Is(err, e) {
+			return false
+		}
+	}
 	return true
 }
 
@@ -115,12 +163,4 @@ func prepend(errs []error, err error) []error {
 		errs[0] = err
 	}
 	return errs
-}
-
-// Join the collected errors. It uses the same rules and logic as the
-// Join function.
-func (l *List) Join() error {
-	l.mut.RLock()
-	defer l.mut.RUnlock()
-	return errors.Join(l.list...)
 }
