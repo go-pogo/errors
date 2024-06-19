@@ -7,10 +7,11 @@ package errors
 import (
 	stderrors "errors"
 	"fmt"
-	"github.com/go-pogo/errors/internal"
-	"github.com/stretchr/testify/assert"
 	"runtime"
 	"testing"
+
+	"github.com/go-pogo/errors/internal"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFilter(t *testing.T) {

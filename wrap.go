@@ -7,8 +7,9 @@ package errors
 import (
 	stderrors "errors"
 	"fmt"
-	"golang.org/x/xerrors"
 	"reflect"
+
+	"golang.org/x/xerrors"
 )
 
 // A Wrapper provides context around another error, which can be retrieved with

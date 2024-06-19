@@ -6,9 +6,10 @@ package errgroup
 
 import (
 	"context"
+	"sync"
+
 	"github.com/go-pogo/errors"
 	"github.com/go-pogo/errors/errlist"
-	"sync"
 )
 
 var _ errlist.ErrorLister = (*Group)(nil)

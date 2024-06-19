@@ -5,8 +5,9 @@
 package errlist
 
 import (
-	"github.com/go-pogo/errors"
 	"sync"
+
+	"github.com/go-pogo/errors"
 )
 
 var DefaultCapacity uint = 8

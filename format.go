@@ -6,6 +6,7 @@ package errors
 
 import (
 	"fmt"
+
 	"golang.org/x/xerrors"
 )
 
@@ -24,6 +25,7 @@ func WithFormatter(err error) Formatter {
 		return nil
 	}
 
+	//goland:noinspection GoTypeAssertionOnErrors
 	if f, ok := err.(Formatter); ok {
 		return f
 	}
@@ -40,6 +42,7 @@ func FormatError(err error, state fmt.State, verb rune) {
 		return
 	}
 
+	//goland:noinspection GoTypeAssertionOnErrors
 	f, ok := err.(Formatter)
 	if !ok {
 		f = &embedError{error: err}

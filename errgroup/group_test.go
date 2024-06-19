@@ -6,12 +6,13 @@ package errgroup
 
 import (
 	"context"
+	"sync/atomic"
+	"testing"
+
 	"github.com/go-pogo/errors"
 	"github.com/go-pogo/errors/errlist"
 	"github.com/go-pogo/errors/internal"
 	"github.com/stretchr/testify/assert"
-	"sync/atomic"
-	"testing"
 )
 
 func TestWithContext(t *testing.T) {

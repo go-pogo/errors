@@ -6,10 +6,11 @@ package errlist
 
 import (
 	stderrors "errors"
+	"testing"
+
 	"github.com/go-pogo/errors"
 	"github.com/go-pogo/errors/internal"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func assertEmptyList(t *testing.T, list *List) {

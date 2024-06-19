@@ -8,12 +8,13 @@ import (
 	"bytes"
 	stderrors "errors"
 	"fmt"
-	"github.com/go-pogo/errors/internal"
-	"github.com/stretchr/testify/assert"
-	"golang.org/x/xerrors"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/go-pogo/errors/internal"
+	"github.com/stretchr/testify/assert"
+	"golang.org/x/xerrors"
 )
 
 func TestWithFormatter(t *testing.T) {
