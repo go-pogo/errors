@@ -52,7 +52,12 @@ func WithStack(err error) StackTracer {
 }
 
 // GetStackTrace returns a *StackTrace if err is a StackTracer or nil otherwise.
+// It will always return nil when the "notrace" build tag is set.
 func GetStackTrace(err error) *StackTrace {
+	if !internal.TraceStack {
+		return nil
+	}
+
 	//goland:noinspection GoTypeAssertionOnErrors
 	if e, ok := err.(StackTracer); ok {
 		return e.StackTrace()
