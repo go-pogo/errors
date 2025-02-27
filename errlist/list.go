@@ -10,10 +10,11 @@ import (
 	"github.com/go-pogo/errors"
 )
 
+// DefaultCapacity of internal errors slice when using zero value List.
 var DefaultCapacity uint = 8
 
 type ErrorLister interface {
-	// ErrorList returns a List of collected non-nil errors.
+	// ErrorList returns a [List] of collected non-nil errors.
 	ErrorList() *List
 }
 
@@ -23,31 +24,31 @@ type List struct {
 	list []error
 }
 
-// New creates a new List using the provided slice.
+// New creates a new [List] using the provided slice.
 func New(slice []error) *List {
 	return &List{list: slice}
 }
 
-// NewWithCapacity creates a new List with a pre-allocated capacity.
+// NewWithCapacity creates a new [List] with a pre-allocated capacity.
 func NewWithCapacity(cap uint) *List {
 	return &List{list: make([]error, 0, cap)}
 }
 
-// Len returns the number of errors within the List.
+// Len returns the number of errors within the [List].
 func (l *List) Len() int {
 	l.mut.RLock()
 	defer l.mut.RUnlock()
 	return len(l.list)
 }
 
-// IsEmpty return true when the list is empty.
+// IsEmpty return true when [List] is empty.
 func (l *List) IsEmpty() bool {
 	l.mut.RLock()
 	defer l.mut.RUnlock()
 	return len(l.list) == 0
 }
 
-// All returns the error slice within the list.
+// All returns a copy of the error slice within [List].
 func (l *List) All() []error {
 	l.mut.RLock()
 	defer l.mut.RUnlock()
@@ -61,15 +62,15 @@ func (l *List) All() []error {
 }
 
 // Join the collected errors. It uses the same rules and logic as the
-// Join function.
+// [errors.Join] function.
 func (l *List) Join() error {
 	l.mut.RLock()
 	defer l.mut.RUnlock()
 	return errors.Join(l.list...)
 }
 
-// Append an error to the List. It guarantees only non-nil errors are added.
-// It returns true when the error is appended to the list, false otherwise.
+// Append an error to the [List]. It guarantees only non-nil errors are added.
+// It returns true when the error is appended to [List], false otherwise.
 func (l *List) Append(err error) bool {
 	if err == nil {
 		return false
@@ -85,9 +86,9 @@ func (l *List) Append(err error) bool {
 	return true
 }
 
-// AppendUnique appends an error to the List and guarantees that the error is
-// non-nil and unique within the List.
-// It returns true when the error is appended to the list, false otherwise.
+// AppendUnique appends an error to [List] and guarantees that the error is
+// non-nil and unique within the [List].
+// It returns true when the error is appended, false otherwise.
 func (l *List) AppendUnique(err error) bool {
 	if err == nil {
 		return false
@@ -108,8 +109,8 @@ func (l *List) AppendUnique(err error) bool {
 	return false
 }
 
-// Prepend an error to the list. It guarantees only non-nil errors are added.
-// It returns true when the error is appended to the list, false otherwise.
+// Prepend an error to the [List]. It guarantees only non-nil errors are added.
+// It returns true when the error is appended, false otherwise.
 func (l *List) Prepend(err error) bool {
 	if err == nil {
 		return false
@@ -127,6 +128,9 @@ func (l *List) Prepend(err error) bool {
 	return true
 }
 
+// PrependUnique prepends an error to [List] and guarantees that the error is
+// non-nil and unique within the [List].
+// It returns true when the error is appended, false otherwise.
 func (l *List) PrependUnique(err error) bool {
 	if err == nil {
 		return false
