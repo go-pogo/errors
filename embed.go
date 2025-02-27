@@ -16,9 +16,9 @@ type Embedder interface {
 	Unembed() error
 }
 
-// Unembed recursively unwraps all Embedder errors and returns the (original)
+// Unembed recursively unwraps all [Embedder] errors and returns the (original)
 // error that was wrapped with extra context.
-// If err is not an Embedder, Unembed returns err as provided.
+// If err is not an [Embedder], Unembed returns err as provided.
 func Unembed(err error) error {
 	//goland:noinspection GoTypeAssertionOnErrors
 	if u, ok := err.(Embedder); ok {
@@ -32,8 +32,8 @@ type embedError struct {
 	stack *StackTrace
 }
 
-// StackTrace returns the StackTrace of this error or, if nil, tries to return
-// the first non-nil StackTrace of an embedded error.
+// StackTrace returns the [StackTrace] of this error or, if nil, tries to return
+// the first non-nil [StackTrace] of an embedded error.
 func (e *embedError) StackTrace() *StackTrace {
 	if e.stack == nil {
 		e.stack = GetStackTrace(Unembed(e.error))
@@ -47,14 +47,15 @@ func (e *embedError) Unembed() error { return e.error }
 // Unwrap the underlying error.
 func (e *embedError) Unwrap() error { return e.error }
 
-// Format uses xerrors.FormatError to call the FormatError method of the error
-// with a Printer configured according to s and v, and writes the result to s.
+// Format uses [xerrors.FormatError] to call the [FormatError] method of the
+// error with a [Printer] configured according to s and v, and writes the
+// result to s.
 func (e *embedError) Format(s fmt.State, v rune) {
 	xerrors.FormatError(e, s, v)
 }
 
-// FormatError prints the error to the Printer using PrintError and returns the
-// next error in the error chain, if any.
+// FormatError prints the error to the [Printer] using [PrintError] and returns
+// the next error in the error chain, if any.
 func (e *embedError) FormatError(p Printer) error {
 	PrintError(p, e)
 	return Unwrap(Unembed(e.error))

@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// Timer interfaces provide access to a time.Time indicating when the error
+// Timer interfaces provide access to a [time.Time] indicating when the error
 // occurred.
 type Timer interface {
 	error
@@ -22,8 +22,8 @@ type TimerSetter interface {
 }
 
 // WithTime adds time information to the error. It does so by wrapping the
-// error with a Timer, or update/set the time when error is a
-// TimerSetter. It will return nil when the provided error is nil.
+// error with a [Timer], or update/set the time when error implements
+// [TimerSetter]. It will return nil when the provided error is nil.
 func WithTime(err error, when time.Time) Timer {
 	if err == nil {
 		return nil
@@ -40,8 +40,8 @@ func WithTime(err error, when time.Time) Timer {
 	}
 }
 
-// GetTime returns the time.Time of the last found Timer in err's error chain.
-// If none is found, it returns the provided value or.
+// GetTime returns the [time.Time] of the last found [Timer] in err's error
+// chain. If none is found, it returns the provided value or.
 func GetTime(err error) (time.Time, bool) {
 	var dt time.Time
 	var has bool

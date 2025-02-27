@@ -36,7 +36,7 @@ func Filter(errors []error) []error {
 	return errors[:n]
 }
 
-// Join returns a MultiError when more than one non-nil errors are provided.
+// Join returns a [MultiError] when more than one non-nil errors are provided.
 // It returns a single error when only one error is passed, and nil if no
 // non-nil errors are provided.
 func Join(errs ...error) error {
@@ -55,9 +55,9 @@ func Join(errs ...error) error {
 	return newMultiErr(errs, 2)
 }
 
-// Append creates a multi error from two non-nil errors. If left is already a
-// multi error, the other error is appended to it. If either of the errors is
-// nil, the other error is returned.
+// Append creates a [MultiError] from two non-nil errors. If left is already a
+// multi error created via this package, the other error is appended to it.
+// If either of the errors is nil, the other error is returned.
 func Append(left, right error) error {
 	if left == nil {
 		return right
@@ -84,7 +84,7 @@ const (
 // When the value of dest is nil and errs only contains a single error, its
 // value is set to the value of dest.
 //
-// Important: when using AppendInto with defer, the pointer to the dest error
+// Important: when using [AppendInto] with defer, the pointer to the dest error
 // must be a named return variable. For additional details see
 // https://golang.org/ref/spec#Defer_statements.
 func AppendInto(dest *error, errs ...error) (errored bool) {
@@ -118,7 +118,7 @@ func AppendInto(dest *error, errs ...error) (errored bool) {
 }
 
 // AppendFunc appends the non-nil error result of fn to dest using
-// AppendInto.
+// [AppendInto].
 func AppendFunc(dest *error, fn func() error) {
 	if dest == nil {
 		panic(panicAppendFuncNilPtr)
@@ -129,6 +129,7 @@ func AppendFunc(dest *error, fn func() error) {
 	AppendInto(dest, fn())
 }
 
+// multiErr is an error which unwraps into multiple underlying errors.
 type multiErr struct {
 	stack *StackTrace
 	msg   string
@@ -158,16 +159,17 @@ func (m *multiErr) append(err error) {
 
 func (m *multiErr) StackTrace() *StackTrace { return m.stack }
 
-// Unwrap returns the errors within the multi error.
+// Unwrap returns the errors within the [multiErr].
 func (m *multiErr) Unwrap() []error { return m.errs }
 
 // Errors returns the errors within the multi error.
 //
-// Deprecated: Use Unwrap instead.
+// Deprecated: Use [Unwrap] instead.
 func (m *multiErr) Errors() []error { return m.errs }
 
-// Format uses xerrors.FormatError to call the FormatError method of the error
-// with a Printer configured according to s and v, and writes the result to s.
+// Format uses [xerrors.FormatError] to call the [FormatError] method of the
+// error with a [Printer] configured according to s and v, and writes the
+// result to s.
 func (m *multiErr) Format(s fmt.State, v rune) { xerrors.FormatError(m, s, v) }
 
 // FormatError prints a summary of the encountered errors to p.

@@ -27,8 +27,8 @@ func Must(args ...interface{}) {
 }
 
 // CatchPanic recovers from a panic and wraps it in an error. It then calls
-// AppendInto with the provided dest *error and wrapped panic.
-// Use CatchPanic directly with defer. It is not possible to use CatchPanic
+// [AppendInto] with the provided dest *error and wrapped panic.
+// Use [CatchPanic] directly with defer. It is not possible to use [CatchPanic]
 // inside a deferred function, like:
 //
 //	defer func(){ CatchPanic(&err }()
@@ -61,6 +61,7 @@ func (p *panicError) Error() string {
 	}
 }
 
+// GoString prints the error in basic Go syntax.
 func (p *panicError) GoString() string {
 	return fmt.Sprintf("errors.panicError{v: %#v}", p.v)
 }

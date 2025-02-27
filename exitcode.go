@@ -22,7 +22,7 @@ type ExitCoderSetter interface {
 }
 
 // WithExitCode adds an exit status code to the error which may indicate a
-// fatal error. The exit code can be supplied to os.Exit to terminate the
+// fatal error. The exit code can be supplied to [os.Exit] to terminate the
 // program immediately.
 func WithExitCode(err error, exitCode int) ExitCoder {
 	if err == nil {
@@ -42,10 +42,10 @@ func WithExitCode(err error, exitCode int) ExitCoder {
 }
 
 // GetExitCode returns an exit status code if the error implements the
-// ExitCoder interface. If not, it returns 0.
+// [ExitCoder] interface, otherwise it returns 0.
 func GetExitCode(err error) int { return GetExitCodeOr(err, 0) }
 
-// GetExitCodeOr returns the exit status code from the first found ExitCoder
+// GetExitCodeOr returns the exit status code from the first found [ExitCoder]
 // in err's error chain. If none is found, it returns the provided value or.
 func GetExitCodeOr(err error, or int) int {
 	for {

@@ -14,18 +14,18 @@ import (
 	"golang.org/x/xerrors"
 )
 
-// StackTracer interfaces provide access to a stack of traced StackTrace.
+// StackTracer interfaces provides access to a [StackTrace].
 type StackTracer interface {
 	error
 
-	// StackTrace returns a stack of traces frames.
+	// StackTrace returns a stack of trace frames.
 	StackTrace() *StackTrace
 }
 
 const panicUseNewInstead = "errors.WithStack: use errors.New instead to create an error from an errors.Msg"
 
-// WithStack gets a stack trace at the point WithStack was called and adds it to
-// the error. If err is nil, WithStack returns nil.
+// WithStack gets a stack trace at the point WithStack was called and adds it
+// to the error. If err is nil, WithStack returns nil.
 func WithStack(err error) StackTracer {
 	if err == nil {
 		return nil
@@ -51,8 +51,8 @@ func WithStack(err error) StackTracer {
 	}
 }
 
-// GetStackTrace returns a *StackTrace if err is a StackTracer or nil otherwise.
-// It will always return nil when the "notrace" build tag is set.
+// GetStackTrace returns a [StackTrace] if err is a [StackTracer] or nil
+// otherwise. It will always return nil when the "notrace" build tag is set.
 func GetStackTrace(err error) *StackTrace {
 	if !internal.TraceStack {
 		return nil
@@ -69,7 +69,7 @@ type StackTrace struct {
 	frames   []uintptr
 	reversed bool
 
-	// Skip n frames when formatting with Format, so overlapping frames from
+	// Skip n frames when formatting with [Format], so overlapping frames from
 	// previous errors are not printed.
 	Skip uint
 }
@@ -129,12 +129,12 @@ type Frame uintptr
 // PC is the program counter for the location in this frame.
 func (fr Frame) PC() uintptr { return uintptr(fr) }
 
-// Func returns a *runtime.Func describing the function that contains the
+// Func returns a [runtime.Func] describing the function that contains the
 // given program counter address, or else nil.
 func (fr Frame) Func() *runtime.Func { return runtime.FuncForPC(fr.PC()) }
 
 // FileLine returns the file name and line number of the source code
-// corresponding to the program counter PC.
+// corresponding to the program counter [PC].
 func (fr Frame) FileLine() (file string, line int) {
 	if f := fr.Func(); f == nil {
 		return "", 0
@@ -143,8 +143,8 @@ func (fr Frame) FileLine() (file string, line int) {
 	}
 }
 
-// Frames returns a []Frame. Use CallersFrames instead if you want to access the
-// whole stack trace of frames.
+// Frames returns a slice of [Frame]. Use [StackTrace.CallersFrames] instead if
+// you want to access the whole stack trace of frames.
 func (st *StackTrace) Frames() []Frame {
 	st.reverseFrames()
 	frames := make([]Frame, len(st.frames))
@@ -154,8 +154,8 @@ func (st *StackTrace) Frames() []Frame {
 	return frames
 }
 
-// CallersFrames returns a *runtime.Frames by calling runtime.CallersFrame with
-// the captured stack trace frames as callers argument.
+// CallersFrames returns a [runtime.Frames] by calling [runtime.CallersFrames]
+// with the captured stack trace frames as callers argument.
 func (st *StackTrace) CallersFrames() *runtime.Frames {
 	st.reverseFrames()
 	return runtime.CallersFrames(st.frames)
@@ -169,9 +169,9 @@ func (st *StackTrace) Len() uint {
 	return uint(len(st.frames))
 }
 
-// Format formats the slice of xerrors.Frame using a xerrors.Printer. It will
-// Skip n frames when printing so no overlapping frames with underlying errors
-// are displayed.
+// Format formats the slice of [xerrors.Frame] using a [xerrors.Printer]. It
+// will skip n frames according to [StackTrace.Skip], when printing so no
+// overlapping frames with underlying errors are displayed.
 func (st *StackTrace) Format(printer xerrors.Printer) {
 	if printer.Detail() {
 		st.printFrames(printer, st.Skip)
@@ -190,7 +190,7 @@ func (st *StackTrace) printFrames(p Printer, skip uint) {
 	PrintFrames(p, runtime.CallersFrames(st.frames[skip:]))
 }
 
-// PrintFrames prints a complete stack of *runtime.Frames using Printer p.
+// PrintFrames prints a complete stack of [runtime.Frames] using [Printer] p.
 func PrintFrames(p Printer, cf *runtime.Frames) {
 	for {
 		f, more := cf.Next()
@@ -201,8 +201,8 @@ func PrintFrames(p Printer, cf *runtime.Frames) {
 	}
 }
 
-// framesPrinter is a xerrors.Printer that is used to print the string
-// representation of StackTrace.
+// framesPrinter is a [xerrors.Printer] that is used to print the string
+// representation of [StackTrace].
 type framesPrinter struct{ b io.Writer }
 
 func (p *framesPrinter) Print(args ...interface{}) {

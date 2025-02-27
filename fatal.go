@@ -10,7 +10,8 @@ import (
 )
 
 // FatalOnErr prints the error to stderr and exits the program with an exit
-// code that is not 0. When err is an ExitCoder its exit code is used.
+// code that is not 0. When err is an [ExitCoder] its exit code is used,
+// otherwise it defaults to 1.
 func FatalOnErr(err error) {
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "\nFatal error: %+v\n", err)

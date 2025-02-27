@@ -20,12 +20,13 @@ type StatusCoderSetter interface {
 }
 
 // WithStatusCode adds a (http) status code to the error which can be retrieved
-// using GetStatusCode and may be set to a http.ResponseWriter.
+// using [GetStatusCode] and may be set to a [http.ResponseWriter].
 func WithStatusCode(err error, statusCode int) StatusCoder {
 	if err == nil {
 		return nil
 	}
 
+	//goland:noinspection GoTypeAssertionOnErrors
 	if e, ok := err.(StatusCoderSetter); ok {
 		e.SetStatusCode(statusCode)
 		return e
@@ -37,11 +38,11 @@ func WithStatusCode(err error, statusCode int) StatusCoder {
 	}
 }
 
-// GetStatusCode returns the status code if the error implements the StatusCoder
-// interface. If not, it returns 0.
+// GetStatusCode returns the status code if the error implements the
+// [StatusCoder] interface, otherwise it returns 0.
 func GetStatusCode(err error) int { return GetStatusCodeOr(err, 0) }
 
-// GetStatusCodeOr returns the status code from the first found StatusCoder
+// GetStatusCodeOr returns the status code from the first found [StatusCoder]
 // in err's error chain. If none is found, it returns the provided value or.
 func GetStatusCodeOr(err error, or int) int {
 	for {
