@@ -65,13 +65,13 @@ func (g *Group) Go(fn func() error) {
 	go func() {
 		defer g.wg.Done()
 		if err := fn(); err != nil {
+			if g.cancel != nil {
+				defer g.cancel(err)
+			}
 			if errors.IsCause(err) {
 				g.errs.AppendUnique(err)
 			} else {
 				g.errs.Append(err)
-			}
-			if g.cancel != nil {
-				g.cancel(err)
 			}
 		}
 	}()
