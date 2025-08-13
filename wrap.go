@@ -80,6 +80,7 @@ func Unwrap(err error) error { return stderrors.Unwrap(err) }
 func UnwrapAll(err error) []error {
 	res := make([]error, 0, 6)
 	for {
+		//nolint:staticcheck
 		if err == nil {
 			break
 		}
