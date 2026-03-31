@@ -3,7 +3,7 @@ module github.com/go-pogo/errors
 go 1.20
 
 require (
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da
 )
 
