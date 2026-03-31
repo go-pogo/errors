@@ -163,7 +163,7 @@ func (st *StackTrace) CallersFrames() *runtime.Frames {
 
 // Len returns the amount of captures frames.
 func (st *StackTrace) Len() uint {
-	if nil == st {
+	if st == nil {
 		return 0
 	}
 	return uint(len(st.frames))
@@ -173,7 +173,7 @@ func (st *StackTrace) Len() uint {
 // will skip n frames according to [StackTrace.Skip], when printing so no
 // overlapping frames with underlying errors are displayed.
 func (st *StackTrace) Format(printer xerrors.Printer) {
-	if printer.Detail() {
+	if st != nil && printer.Detail() {
 		st.printFrames(printer, st.Skip)
 	}
 }
